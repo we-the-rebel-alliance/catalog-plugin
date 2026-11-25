@@ -119,7 +119,7 @@
     "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#v0.0.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3",
-    "yaml": "^2.9.1"
+    "yaml": "2.9.1"
   },
   "homepage": "https://github.com/we-the-rebel-alliance/catalog-plugin#readme",
   "bugs": {

@@ -9,7 +9,7 @@
 | Requests | `src/requests.ts` | the two wire requests and the relayed status shape, checked strictly |
 | Handlers | `src/handlers/` | one handler per method: the input, the answer schema, the description and the work |
 | Host | `src/host/` | the contract's `ReadHost` over OpenCode, the target resolution and the account resolution |
-| Skills | `src/skills.ts` | reads `skills/*/SKILL.md`, validates each, and registers it with `ctx.skill.transform` |
+| Skills | `src/skills.ts` | reads `skills/*/SKILL.md`, parses its YAML frontmatter, and registers each with `ctx.skill.transform` |
 | Watch | `src/watch.ts` | the installed-set signature and the one `changed` nudge |
 | Failures | `src/failure.ts` | a contract failure reported in the contract's form, and a redacted unknown one |
 
@@ -24,8 +24,9 @@ place that opens a session or calls another plugin's RPC.
 2. `assertHost` refuses an OpenCode release outside `>=2.4.1 <2.5.0`, unless `allowUntestedHost` is set.
 3. `register` checks the handler table against `capabilities.methods`, generates the access rules into every agent,
    registers the tools and the single RPC id, and builds the typed bus from that one registration.
-4. `src/skills.ts` reads and validates `skills/*/SKILL.md` and registers each with `ctx.skill.transform`, because the
-   contract's `register` wires methods, not skills.
+4. `src/skills.ts` reads `skills/*/SKILL.md`, parses each frontmatter as YAML (the bundled `yaml` parser), checks the
+   name, description and body, and registers each with `ctx.skill.transform`, because the contract's `register` wires
+   methods, not skills.
 5. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`; it emits through
    `registration.bus`.
 6. A call passes the register's one gate (`catalog.<method>` on the method's resources), is validated against the
@@ -82,6 +83,6 @@ plugin's lifetime; that subscription is not a per-request hook.
 ## Build
 
 `scripts/build.mjs` bundles `src/index.ts` into `dist/index.js` with esbuild. `@opencode/*` stays external, because
-OpenCode provides it; the contract modules are bundled, so a tag installs and runs with no build and no runtime
-dependency. `dist/` is committed; `npm run bundle` writes it, and CI fails when the committed copy differs from a fresh
+OpenCode provides it; the contract modules and the YAML parser are bundled (with a `createRequire` banner for the
+CommonJS parser), so a tag installs and runs with no build and no runtime dependency. `dist/` is committed; `npm run bundle` writes it, and CI fails when the committed copy differs from a fresh
 bundle (`npm run bundle && git diff --exit-code dist/`).

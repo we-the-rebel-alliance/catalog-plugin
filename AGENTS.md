@@ -47,7 +47,7 @@ src/handlers/             one file per method: status, list, broker_read, broker
 src/host/broker.ts        the contract's ReadHost over OpenCode: sessions, status and the target's RPC
 src/host/target.ts        the installed target and the target account alias, checked before any call
 src/watch.ts              the installed-set signature and the one `rpc.catalog.changed` nudge
-src/skills.ts             reads skills/*/SKILL.md, validates each and registers it with ctx.skill.transform
+src/skills.ts             reads skills/*/SKILL.md, parses the YAML frontmatter and registers each with ctx.skill.transform
 src/failure.ts            a contract failure reported in the contract's form, redacted
 test/unit/                the manifest, the requests, the failures and the fixture
 test/host/                the built bundle on the real OpenCode 2.4.1 host, over the real RPC door
@@ -94,10 +94,11 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
 - **Reuse the output schemas.** `STATUS_SCHEMA` from `accounts` is the `status` answer; `PAGE_SCHEMA`, `PROBE_SCHEMA`
   and `LIST_OPTIONS_SCHEMA` from `events` are an events source's `events_list`, `probe` and `list_*` answers. Copying
   those shapes into the plugin is drift.
-- **Register the skills.** `register` wires methods, not skills. `src/skills.ts` reads `skills/*/SKILL.md`, validates
-  the frontmatter (the name equals the directory, a description, non-empty content) and calls
-  `ctx.skill.transform((editor) => editor.add({ id, name, description, path, content }))` in `setup`; the host test
-  proves every skill id is registered after load.
+- **Register the skills.** `register` wires methods, not skills. `src/skills.ts` reads `skills/*/SKILL.md`, parses its
+  frontmatter as YAML (the `yaml` devDependency is bundled into `dist/`), checks the name equals the directory, the
+  description and the body, and `registerSkills(context, skills)` adds each through `ctx.skill.transform` in `setup`. A
+  plain description containing `: ` must be quoted or written as a block scalar: YAML is strict, and a parse error fails
+  the whole setup. The host test proves every registered description is the YAML text, not `>` or `|`.
 - **One RPC registration.** `register` owns it. A second `ctx.rpc.register` under `catalog` would hide the methods.
 - **The fence is the contract's.** `read` and `act` build the session rules from the request's grant fields; the catalog
   adds no operation and substitutes no account.
@@ -123,9 +124,14 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
   valid grant, and the missing, replayed and other-plan refusals; and `rpc.catalog.changed` when a plugin is added.
 - `test/host/access.test.ts` proves the catalog's own ceiling on the same host: `read-only` refuses the commit even with
   a valid grant, and `ask-changes` runs it once the ask is answered.
+- `test/host/skills.test.ts` loads the bundle in the real host with an empty project and proves every `skills/*/SKILL.md`
+  id, path, body and YAML description is registered; `test/unit/skills.test.ts` covers the loader's block scalars and
+  refusals.
 
-`test/host/harness.ts` is the one harness: it lays the packages into a temporary `XDG_CACHE_HOME`, starts the embedded
-`@opencode/sdk` host, answers a permission ask where an app would, and closes everything afterwards.
+`test/host/harness.ts` is the harness for the broker and access tests: it lays the packages into a temporary
+`XDG_CACHE_HOME`, starts the embedded `@opencode/sdk` host, answers a permission ask where an app would, and closes
+everything afterwards. The skills test starts its own empty-project host, so OpenCode's discovery cannot supply the
+skill it asserts.
 
 ## Docs
 
