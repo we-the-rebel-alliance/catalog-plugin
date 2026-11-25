@@ -17,7 +17,7 @@ The defaults, in `opencode.json`:
 ```json
 {
   "plugins": [
-    { "package": "@we-the-rebel-alliance/catalog-plugin", "options": { "access": "all" } }
+    { "package": "github:we-the-rebel-alliance/catalog-plugin#v0.0.0", "options": { "access": "all" } }
   ]
 }
 ```
@@ -27,7 +27,7 @@ A person who wants every brokered write to ask, and no other change:
 ```json
 {
   "plugins": [
-    { "package": "@we-the-rebel-alliance/catalog-plugin", "options": { "access": "ask-changes" } }
+    { "package": "github:we-the-rebel-alliance/catalog-plugin#v0.0.0", "options": { "access": "ask-changes" } }
   ]
 }
 ```
@@ -44,7 +44,7 @@ tested, and status still reports the release it runs on.
 {
   "plugins": [
     {
-      "package": "@we-the-rebel-alliance/catalog-plugin",
+      "package": "github:we-the-rebel-alliance/catalog-plugin#v0.0.0",
       "options": {
         "access": "all",
         "grants": [

@@ -197,7 +197,7 @@ None.
 
 The catalog implements [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0. The `capabilities`
 manifest in `package.json` is the declaration, and `plugin-kit` checks it, the built bundle on the real OpenCode 2.4.1
-host, and the generated docs in CI.
+host, and the generated docs in CI. The bundle's third-party notices are in [NOTICE](NOTICE).
 
 ## Docs
 

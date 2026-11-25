@@ -11,14 +11,14 @@ The one trusted door for apps that cannot read the disk: it lists the installed 
 and status, brokers a consumer's read of one plugin's source through the contract's `read` module, and brokers a
 preview and commit of one plugin's action through `act`. It has no provider, no account and no network call; its
 "provider" is OpenCode's own host, and every target call runs in a session fenced by the person's grant. It never
-verifies a grant, never widens one, and keeps no grant, plan or session beyond one call.
+verifies a grant, never widens the person's grant, and keeps no grant, plan or session beyond one call.
 
 ## Names
 
 | Thing | Value |
 |---|---|
 | Plugin id, tool namespace, RPC id | `catalog` |
-| Capability ids | `catalog.<method>`; the listing nudge is `catalog.plugins` |
+| Capability ids | `catalog.<method>`; the listing nudge is `catalog.list` |
 | Accounts | none; a broker request's `account` is the **target** plugin's alias |
 | Permission actions | `catalog.<method>`, on resources `default:*` (the plugin has no accounts) |
 | Bus events | `rpc.catalog.changed` |

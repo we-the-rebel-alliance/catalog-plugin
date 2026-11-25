@@ -78,11 +78,20 @@ test("the packed tarball installs with opencode plugin add and starts", async ()
   let server: ChildProcess | undefined
   try {
     const packed = execFileSync("npm", ["pack", "--json", "--pack-destination", work], { cwd: root, encoding: "utf8" })
-    const filename = (JSON.parse(packed) as { readonly filename?: unknown }[])[0]?.filename
+    const info = (JSON.parse(packed) as {
+      readonly filename?: unknown
+      readonly files?: readonly { readonly path?: unknown }[]
+    }[])[0]
+    const filename = info?.filename
     assert.equal(typeof filename, "string", "npm pack names its tarball")
+    const files = (info?.files ?? []).map((file) => file.path)
+    assert.ok(files.includes("NOTICE"), "the tarball carries the third-party NOTICE")
     execFileSync("tar", ["-xzf", join(work, filename as string), "-C", prepared])
 
     const pkg = join(prepared, "package")
+    const notice = readFileSync(join(pkg, "NOTICE"), "utf8")
+    assert.match(notice, /yaml 2\.9\.1/, "the NOTICE carries the yaml licence")
+    assert.match(notice, /zod 4\.6\.7/, "the NOTICE carries the zod licence")
     const git = (...args: string[]) =>
       execFileSync("git", ["-c", "user.email=install@example.test", "-c", "user.name=Install", ...args], { cwd: pkg, encoding: "utf8" })
     git("init", "-q")
