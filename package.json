@@ -104,13 +104,13 @@
     }
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test \"test/**/*.test.ts\"",
     "fixtures": "node scripts/record-fixture.mjs",
     "docs": "plugin-kit docs",
     "docs:check": "plugin-kit docs --check",
-    "check": "npm run typecheck && npm run build && npm run test && plugin-kit check && plugin-kit docs --check"
+    "check": "npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm run test && plugin-kit check && plugin-kit docs --check",
+    "bundle": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@opencode/plugin": "2.4.1",

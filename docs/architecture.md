@@ -79,4 +79,5 @@ plugin's lifetime; that subscription is not a per-request hook.
 
 `scripts/build.mjs` bundles `src/index.ts` into `dist/index.js` with esbuild. `@opencode/*` stays external, because
 OpenCode provides it; the contract modules are bundled, so a tag installs and runs with no build and no runtime
-dependency. `dist/` is generated and is not committed.
+dependency. `dist/` is committed; `npm run bundle` writes it, and CI fails when the committed copy differs from a fresh
+bundle (`npm run bundle && git diff --exit-code dist/`).

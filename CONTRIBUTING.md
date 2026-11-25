@@ -20,13 +20,13 @@ npm run check
 | Step | What it proves |
 |---|---|
 | `npm run typecheck` | the sources and tests typecheck under strict settings |
-| `npm run build` | `dist/index.js` is built from `src/index.ts` with esbuild |
+| `npm run bundle` | the committed `dist/index.js` is bundled from `src/index.ts` with esbuild |
 | `npm test` | the unit tests and the real-host tests pass |
 | `plugin-kit check` | conformance T0 and T1, the doc file set, the forbidden patterns and no bundled kit |
 | `plugin-kit docs --check` | every generated doc section matches the manifest |
 
-CI runs the same steps in one job named `ci`. `dist/` is generated and is not committed, so CI builds it before
-`plugin-kit check`.
+CI runs the same steps in one job named `ci`, and fails when the committed `dist/` differs from a fresh
+`npm run bundle`.
 
 The host tests install the contract's two example packages and the Brass test target into a temporary `XDG_CACHE_HOME`
 and start the embedded `@opencode/sdk` 2.4.1 host. They need no network and no account.
@@ -64,4 +64,4 @@ from the contract at the pinned commit and used only as host-test packages. They
 Releases are tags, not npm packages. A release is prepared in one pull request,
 `chore(release): prepare vX.Y.Z`: the version in `package.json` and `package-lock.json`, the `CHANGELOG.md` section, and
 `npx plugin-kit docs` if the manifest changed. The owner pushes the tag after `master`'s CI passed; the release workflow
-checks the tag, builds, and creates the GitHub release with the packed tarball, the conformance report and `SHA256SUMS`.
+checks the tag and the committed bundle, then creates the GitHub release with the packed tarball, the conformance report and `SHA256SUMS`.
