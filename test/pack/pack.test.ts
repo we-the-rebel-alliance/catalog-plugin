@@ -70,6 +70,8 @@ test("the packed tarball installs with opencode plugin add and starts", async ()
     XDG_CACHE_HOME: join(home, "cache"),
     XDG_DATA_HOME: join(home, "data"),
     XDG_STATE_HOME: join(home, "state"),
+    // A non-interactive server generates a password and prints it; a known one lets `opencode api` authenticate.
+    OPENCODE_SERVER_PASSWORD: "catalog-pack-test",
     NO_COLOR: "1",
   }
   let server: ChildProcess | undefined
