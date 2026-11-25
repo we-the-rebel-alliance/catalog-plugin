@@ -17,53 +17,35 @@ grant. One known contract issue still lets a target method-level `deny` be overr
 opencode plugin add github:we-the-rebel-alliance/catalog-plugin#v0.0.0
 ```
 
+The same spec in `opencode.json`:
+
+```json
+{
+  "plugins": [
+    { "package": "github:we-the-rebel-alliance/catalog-plugin#v0.0.0", "options": { "access": "all" } }
+  ]
+}
+```
+
 `v0.0.0` is the first release on plugin-contract v0, cut from `master` by the release workflow. Pin it, because a Git
 install does not update by itself. Until the tag is published, pin the commit you reviewed instead; the release
 workflow packs the tag's committed `dist/index.js`.
 
 ## Use it
 
-The namespace and RPC id are `catalog`. A brokered read sends the contract's `BrokerRequest` inside `request`:
-
-```json
-POST /api/rpc/catalog/broker_read
-{
-  "sessionID": "<session>",
-  "input": {
-    "request": {
-      "package": "@example/notes-plugin",
-      "version": "0.0.0",
-      "manifestHash": "sha256:…",
-      "consumer": "notes",
-      "source": "notes.messages",
-      "account": "work",
-      "since": "-1d",
-      "limit": 100
-    }
-  }
-}
-```
+The namespace and RPC id are `catalog`. A brokered read posts the contract's `BrokerRequest` inside `request` to
+`POST /api/rpc/catalog/broker_read`. The request names the installed target — its `package`, `version` and
+`manifestHash`, all from `catalog.list` — plus the `consumer`, the target's `source` and `account`, and the read's
+`since`, `cursor`, `limit` or `pick`. [Capabilities](docs/capabilities.md) lists every field.
 
 The answer is the contract's `BrokerAnswer`: `{ offered: true, ok: true, value }` with the plugin's page or snapshot
 untransformed, or `{ offered: true, ok: false, code, message, next }`. `consumer` is the grant key; a request without
 one is `INPUT_INVALID`.
 
-A brokered action previews first and commits second, with the target plugin's plan id and the host-signed grant for it:
-
-```json
-POST /api/rpc/catalog/broker_act
-{ "sessionID": "<session>", "input": { "request": {
-  "package": "…", "version": "…", "manifestHash": "sha256:…",
-  "consumer": "notes", "action": "notes.send", "account": "work", "input": { "text": "Deploy finished" }
-} } }
-
-POST /api/rpc/catalog/broker_act_commit
-{ "sessionID": "<session>", "input": { "request": {
-  "package": "…", "version": "…", "manifestHash": "sha256:…",
-  "consumer": "notes", "action": "notes.send", "account": "work",
-  "planId": "<the preview's planId>", "grant": "<the host-signed token for { planId }>"
-} } }
-```
+A brokered action previews with `POST /api/rpc/catalog/broker_act`, then commits the preview's `planId` and the
+host-signed grant with `POST /api/rpc/catalog/broker_act_commit`. Both requests name the same installed target
+(`package`, `version`, `manifestHash`), `consumer`, `action` and `account`; the preview carries the action's `input`,
+and the commit carries `planId` and `grant`. [Capabilities](docs/capabilities.md) lists every field.
 
 The commit is class `write` with `effect: ask`, so the catalog's own door asks the person before it forwards; an app
 answers that ask and signs the target's grant for the same confirmation. The target plugin's `register` verifies the
