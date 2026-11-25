@@ -1,10 +1,10 @@
-# Who reviews what. The last matching line wins.
+# CODEOWNERS: who reviews what. The last matching line wins.
 #
-# @joe-broadhead maintains the plugin. The contract maintainers review package.json, AGENTS.md and docs/, because those
-# carry the manifest and the standard (plugin standard §1).
+# @joe-broadhead maintains the catalog plugin. The contract maintainers review the manifest, the agent guide and the
+# docs, because those carry the standard's requirements (plugin standard §1).
 
 *                         @joe-broadhead
 
-/package.json             @joe-broadhead
-/AGENTS.md                @joe-broadhead
-/docs/                    @joe-broadhead
+/package.json             @we-the-rebel-alliance/contract-maintainers
+/AGENTS.md                @we-the-rebel-alliance/contract-maintainers
+/docs/                    @we-the-rebel-alliance/contract-maintainers

@@ -1,7 +1,7 @@
 {
   "name": "@we-the-rebel-alliance/catalog-plugin",
   "version": "0.0.0",
-  "description": "One trusted door for apps: lists the installed plugins and their status, brokers a consumer's read of a plugin's source, and brokers a plugin's action preview and commit under the host-signed grant.",
+  "description": "Give an agent one trusted door to the installed OpenCode plugins: their manifests and status, a fenced read of a plugin's source, and a previewed, host-granted action.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -119,5 +119,15 @@
     "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#v0.0.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3"
-  }
+  },
+  "homepage": "https://github.com/we-the-rebel-alliance/catalog-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/we-the-rebel-alliance/catalog-plugin/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "plugin-contract",
+    "catalog"
+  ]
 }

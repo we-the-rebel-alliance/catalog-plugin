@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.0
+## 0.0.0 (2026-11-25)
 
 The first release: one trusted door for apps on plugin-contract v0.
 

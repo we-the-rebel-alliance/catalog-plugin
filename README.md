@@ -11,19 +11,11 @@ catalog never verifies a grant, never widens one, and keeps no grant, session or
 
 ## Install
 
-`dist/` is built by CI and is not committed, so install the packed tarball from this repository's GitHub release, not
-the source tree. No release exists yet: the first is `v0.0.0`, cut by the owner once this repository's first pull
-request has merged, and its release carries the tarball and `SHA256SUMS`.
-
 ```sh
-opencode plugin add ./we-the-rebel-alliance-catalog-plugin-0.0.0.tgz
+opencode plugin add github:we-the-rebel-alliance/catalog-plugin#v0.0.0
 ```
 
-The standard's install line, once a release tag exists, pins the repository at the tag that release names:
-
-```sh
-opencode plugin add github:we-the-rebel-alliance/catalog-plugin#v<version>
-```
+The first release on plugin-contract v0 is `v0.0.0`; pin it, because a Git install does not update by itself.
 
 ## Use it
 
@@ -83,6 +75,20 @@ POST /api/rpc/catalog/list
 
 The catalog also emits `rpc.catalog.changed` on `/api/event` whenever the installed set changes. The event carries no
 content; re-read through `catalog.list`.
+
+## Accounts
+
+The catalog signs in to nothing and has no `accounts` option. A broker request's `account` is the **target plugin's**
+alias, resolved against that plugin's own `status`; the catalog never invents one. See [Accounts](docs/accounts.md).
+
+## Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `access` | `all` | How much the catalog's methods may do; see Access below. |
+| `allowUntestedHost` | `false` | Start on an OpenCode release outside `>=2.4.1 <2.5.0`. Leave it `false`. |
+
+Set them under the plugin's entry in `opencode.json`; see [Configuration](docs/configuration.md).
 
 ## Access
 
@@ -152,6 +158,29 @@ None.
 | `OPTIONS_INVALID` | the plugin's options do not match their schema |
 | `UNAVAILABLE` | the provider could not be reached |
 <!-- /generated:errors -->
+
+## Troubleshooting
+
+- **`HOST_UNTESTED`** — the running OpenCode is outside `>=2.4.1 <2.5.0`. Install a tested release.
+- **`INPUT_INVALID`** — the request is not the contract's `BrokerRequest`, or an act request has an unknown key. Send it
+  inside `request`, with `consumer`, `package`, `version`, `manifestHash` and `source` or `action`, and nothing else.
+- **`ACCOUNT_REQUIRED` / `ACCOUNT_UNKNOWN`** — the target serves several accounts and the request names none, or names
+  an alias it does not serve. Re-read `catalog.list` for the target's status and pass one of its aliases.
+- **`PERMISSION_DENIED`** — the request's `version` or `manifestHash` is not the installed one, the catalog's `access`
+  is `read-only`, or the commit carried no grant. Read the installed manifest again, or ask the person to consent; do not
+  widen anything yourself.
+- **`GRANT_INVALID`** — the target refused the grant: replayed, expired, for another plan, another account or another
+  manifest. Preview again and confirm a fresh grant.
+- **`UNAVAILABLE`** — the named package is not installed, or the target's status cannot be read. Re-read `catalog.list`
+  and check that plugin's `status`.
+- **A plugin's `status` is `ok: false`** — that plugin's own status failed and the rest of the list is still valid;
+  follow that plugin's `nextStep`.
+
+## Contract
+
+The catalog implements [plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) v0. The `capabilities`
+manifest in `package.json` is the declaration, and `plugin-kit` checks it, the built bundle on the real OpenCode 2.4.1
+host, and the generated docs in CI.
 
 ## Docs
 

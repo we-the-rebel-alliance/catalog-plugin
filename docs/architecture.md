@@ -25,7 +25,7 @@ place that opens a session or calls another plugin's RPC.
    registers the tools and the single RPC id, and builds the typed bus from that one registration.
 4. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`; it emits through
    `registration.bus`.
-5. A call passes the register's one gate (`<name>.<method>` on the method's resources), is validated against the
+5. A call passes the register's one gate (`catalog.<method>` on the method's resources), is validated against the
    handler's schema, and runs the handler.
 6. A broker handler resolves the target package, version and manifest hash; reads the target's `status` for its account
    aliases; and calls the contract's `read` or `act` module with a `ReadHost` bound to the calling session's agent.
