@@ -33,10 +33,9 @@ and start the embedded `@opencode/sdk` 2.4.1 host. They need no network and no a
 
 ## The contract pin
 
-`package.json` pins the contract to
-`github:we-the-rebel-alliance/plugin-contract#79da83cfa1668c30a673e6bb392d3122155e6dc1` while the contract is
-unreleased. When the lead tags `v0.0.0`, the pin moves to `github:we-the-rebel-alliance/plugin-contract#v0.0.0` and moves
-with the contract's release. Never copy a contract module into this repository.
+`package.json` pins the contract to its release tag,
+`github:we-the-rebel-alliance/plugin-contract#v0.0.0`, and moves the pin with the contract's release. Never copy a
+contract module into this repository.
 
 The committed `package-lock.json` records the contract's repository over `git+https`, so a fresh `npm ci` needs no SSH
 key. Keep it that way; CI also rewrites an `ssh://git@github.com/` URL to HTTPS for an older lockfile.

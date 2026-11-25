@@ -86,8 +86,9 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
   `registration.bus` and gives every handler call `call.bus`; there is no flag and no placeholder. Do not call
   `ctx.rpc.register` a second time or wrap a registration yourself. Only the manifest's declared events are registered.
 - **Answer status with `statusAnswer`.** `statusAnswer` from `accounts` takes the manifest, the installed and host
-  versions, the account states, the problems the handler knows and the unguarded agents, and builds the `STATUS_SCHEMA`
-  answer. The agents come from `call.unguardedAgents()`, so no state is kept between `register` and the handler.
+  versions, the account states, the problems the handler knows and `await call.unguardedAgents()` — `{ ok, agents |
+  error }`; a failed list becomes an `error` state with a redacted next step. The handler keeps no state between
+  `register` and the call, and catches nothing itself.
 - **Reuse the output schemas.** `STATUS_SCHEMA` from `accounts` is the `status` answer; `PAGE_SCHEMA`, `PROBE_SCHEMA`
   and `LIST_OPTIONS_SCHEMA` from `events` are an events source's `events_list`, `probe` and `list_*` answers. Copying
   those shapes into the plugin is drift.

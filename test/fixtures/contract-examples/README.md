@@ -1,8 +1,8 @@
 # Contract examples (test data)
 
 These two directories are the `examples/integration` and `examples/tools` packages of
-[plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) at commit
-`79da83cfa1668c30a673e6bb392d3122155e6dc1`, copied verbatim.
+[plugin-contract](https://github.com/we-the-rebel-alliance/plugin-contract) at release `v0.0.0`
+(`f7f0e011f6c036766e721ead9d4d902587e04c44`), copied verbatim.
 
 They exist for one reason: the catalog's host tests install real package plugins into a temporary OpenCode cache and
 prove `catalog.list`, `broker_read` and `rpc.catalog.changed` against them. The installed `plugin-contract` devDependency

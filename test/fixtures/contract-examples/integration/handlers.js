@@ -2,15 +2,17 @@
 //
 // `index.js` passes this table to `register` once. Every method is written here as a schema pair and a `run`; the
 // register owns the tool, Code Mode, RPC and permission doors, and the provider module owns the fake Harbour API.
-import { accountStatuses, accountsOf, redactReason, STATUS_SCHEMA, statusAnswer } from "../../dist/accounts.js"
+import { accountStatuses, accountsOf, STATUS_SCHEMA, statusAnswer } from "../../dist/accounts.js"
 import { decodeBoundCursor, encodeBoundCursor } from "../../dist/cursor.js"
-import { LIST_OPTIONS_SCHEMA, makeEvent, PAGE_SCHEMA, PROBE_SCHEMA } from "../../dist/events.js"
+import { eventsListResult, EVENTS_LIST_INPUT_SCHEMA, fitPage, LIST_OPTIONS_SCHEMA, makeEvent, MAX_PAGE_BYTES, PAGE_SCHEMA, parseEventsListInput, PROBE_SCHEMA, probeResult } from "../../dist/events.js"
+import { findSource, maxBytesOf } from "../../dist/manifest.js"
 import { refusal, RegisterError } from "../../dist/register.js"
 import { ProviderError } from "./provider.js"
 
 const PACKAGE = "@we-the-rebel-alliance/harbour-plugin"
 const PLUGIN = "harbour"
 const SOURCE = "notes"
+const SOURCE_ID = "harbour.notes"
 const EMPTY = { type: "object", properties: {}, additionalProperties: false }
 
 const binding = (account, scope) => ({ plugin: PLUGIN, source: SOURCE, account, ...(scope === undefined ? {} : { scope }) })
@@ -63,6 +65,9 @@ function noteEvent(note, account) {
  * @param {string[]} [parts.accountProblems] what registering the accounts could not do, for status
  */
 export function createHandlers({ provider, manifest, options = {}, version, hostVersion, accountProblems = [] }) {
+  const source = findSource(manifest, SOURCE_ID)
+  const maxBytes = source === undefined ? MAX_PAGE_BYTES : maxBytesOf(source)
+
   async function ownersByAlias() {
     const plan = accountsOf(manifest, options)
     if (!plan.ok) return { profiles: [], signals: {} }
@@ -86,21 +91,13 @@ export function createHandlers({ provider, manifest, options = {}, version, host
       output: STATUS_SCHEMA,
       async run(_input, call) {
         const { profiles, signals } = await ownersByAlias()
-        const problems = [...accountProblems]
-        let unguarded = []
-        try {
-          unguarded = [...(await call.unguardedAgents())]
-        } catch (error) {
-          // An unreadable agent list is unknown, never zero: status says error, with a redacted next step.
-          problems.unshift(redactReason(error instanceof Error ? error.message : String(error)))
-        }
         return statusAnswer({
           manifest,
           version,
           hostVersion,
           accounts: profiles.length === 0 ? [] : accountStatuses(profiles, signals),
-          problems,
-          unguardedAgents: unguarded,
+          problems: [...accountProblems],
+          unguardedAgents: await call.unguardedAgents(),
         })
       },
     },
@@ -112,7 +109,7 @@ export function createHandlers({ provider, manifest, options = {}, version, host
       async run(_input, call) {
         try {
           const answer = await provider.whoami({ account: call.account })
-          return { source: SOURCE, account: call.account, owner: answer.owner, scopes: ["spaces"], trust: "untrusted" }
+          return probeResult({ source: SOURCE, account: call.account, owner: answer.owner }, { scopes: ["spaces"] })
         } catch (error) {
           throw refusalFor(error, call, "probe", "Sign the account in again, then probe it.")
         }
@@ -121,26 +118,21 @@ export function createHandlers({ provider, manifest, options = {}, version, host
 
     events_list: {
       description: "List Harbour notes as contract events, oldest first, with a cursor that belongs to the account and scope.",
-      input: {
-        type: "object",
-        properties: {
-          source: { type: "string" },
-          cursor: { type: "string" },
-          since: { type: "string" },
-          limit: { type: "integer", minimum: 1, maximum: 500 },
-          scope: { type: "object", properties: { spaces: { type: "array", items: { type: "string" } } }, additionalProperties: false },
-        },
-        additionalProperties: false,
-      },
+      input: EVENTS_LIST_INPUT_SCHEMA,
       output: PAGE_SCHEMA,
       async run(input, call) {
-        if (input.source !== undefined && input.source !== SOURCE) {
-          throw new RegisterError(refusal("SOURCE_UNKNOWN", `${PLUGIN} has no source ${String(input.source)}`, `Read the ${SOURCE} source.`))
+        const parsed = parseEventsListInput(input, { scopeKeys: ["spaces"] })
+        if (!parsed.ok) {
+          throw new RegisterError(refusal("INPUT_INVALID", `events_list's input breaks its schema: ${parsed.problems.join("; ")}`, "Pass only the input events_list's schema describes."))
         }
-        const scope = input.scope
+        const request = parsed.value
+        if (request.source !== undefined && request.source !== SOURCE) {
+          throw new RegisterError(refusal("SOURCE_UNKNOWN", `${PLUGIN} has no source ${request.source}`, `Read the ${SOURCE} source.`))
+        }
+        const scope = request.scope
         let position = 0
-        if (input.cursor !== undefined) {
-          const decoded = decodeBoundCursor(binding(call.account, scope), input.cursor)
+        if (request.cursor !== undefined) {
+          const decoded = decodeBoundCursor(binding(call.account, scope), request.cursor)
           if (!decoded.ok) {
             throw new RegisterError(refusal("CURSOR_INVALID", `the cursor is ${decoded.reason} to ${call.account}, so this read cannot use it`, "Read again without a cursor."))
           }
@@ -153,22 +145,20 @@ export function createHandlers({ provider, manifest, options = {}, version, host
           const answer = await provider.listNotes({
             account: call.account,
             ...(scope?.spaces === undefined ? {} : { spaces: scope.spaces }),
-            ...(input.cursor !== undefined || input.since === undefined ? {} : { since: input.since }),
+            ...(request.cursor !== undefined || request.since === undefined ? {} : { since: new Date(request.since).toISOString() }),
             position,
-            ...(input.limit === undefined ? {} : { limit: input.limit }),
+            limit: request.limit,
           })
           const owner = await provider.whoami({ account: call.account })
-          return {
-            source: SOURCE,
-            account: call.account,
-            owner: owner.owner,
-            events: answer.notes.map((note) => noteEvent(note, call.account)),
-            cursor: encodeBoundCursor(binding(call.account, scope), { position: answer.next_position }),
-            more: answer.more,
-            trust: "untrusted",
-            plugin: PACKAGE,
-            asOf: provider.asOf,
-          }
+          const events = answer.notes.map((note) => noteEvent(note, call.account))
+          const fit = fitPage(events, request.limit, maxBytes)
+          return eventsListResult(
+            { source: SOURCE, account: call.account, owner: owner.owner },
+            events.slice(0, fit),
+            encodeBoundCursor(binding(call.account, scope), { position: position + fit }),
+            answer.more || fit < events.length,
+            { plugin: PACKAGE, asOf: provider.asOf },
+          )
         } catch (error) {
           throw refusalFor(error, call, "events_list", "Confirm a space this account can read, then read again.")
         }
@@ -180,23 +170,27 @@ export function createHandlers({ provider, manifest, options = {}, version, host
       input: { type: "object", properties: { external_id: { type: "string" } }, required: ["external_id"], additionalProperties: false },
       output: PAGE_SCHEMA,
       async run(input, call) {
+        let page
         try {
           const answer = await provider.readNote({ account: call.account, id: input.external_id })
           const owner = await provider.whoami({ account: call.account })
-          return {
-            source: SOURCE,
-            account: call.account,
-            owner: owner.owner,
-            events: [noteEvent(answer.note, call.account)],
-            cursor: encodeBoundCursor(binding(call.account), { detail: input.external_id }),
-            more: false,
-            trust: "untrusted",
-            plugin: PACKAGE,
-            asOf: provider.asOf,
-          }
+          const events = [noteEvent(answer.note, call.account)]
+          page = eventsListResult(
+            { source: SOURCE, account: call.account, owner: owner.owner },
+            events,
+            encodeBoundCursor(binding(call.account), { detail: input.external_id }),
+            false,
+            { plugin: PACKAGE, asOf: provider.asOf },
+          )
         } catch (error) {
           throw refusalFor(error, call, "read_note", "Read the note that belongs to this account.")
         }
+        // A detail read is not trimmed: a page over the source's limit is refused, so the note is whole or not at all.
+        const bytes = Buffer.byteLength(JSON.stringify(page), "utf8")
+        if (bytes > maxBytes) {
+          throw new RegisterError(refusal("TOO_LARGE", `the note's detail page is ${bytes} bytes, over the ${maxBytes}-byte limit of ${SOURCE_ID}`, "Request a narrower detail, or read within the source's configured limit."))
+        }
+        return page
       },
     },
 

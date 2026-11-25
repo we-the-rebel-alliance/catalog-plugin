@@ -39,7 +39,7 @@ test("the fixture records this package and this manifest's namespace line", () =
 })
 
 test("the recorded status is the status handler's own answer", async () => {
-  const answer = await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => [] } as never)
+  const answer = await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ({ ok: true, agents: [] }) } as never)
   assert.deepEqual(fixture.events?.status, answer)
   assert.equal(checkStatus(fixture.events?.status).ok, true)
 })
@@ -49,13 +49,7 @@ test("the declared bus event is the recorded one, and it is the only one", () =>
   assert.deepEqual([...(fixture.events?.emitted ?? [])], ["changed"])
 })
 
-test("status reads the announced { ok, agents | error } shape as well as the pinned list", async () => {
-  const listed = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ["build"] } as never)) as {
-    readonly state: string
-    readonly unguardedAgents: readonly string[]
-  }
-  assert.equal(listed.state, "ready")
-  assert.deepEqual(listed.unguardedAgents, ["build"])
+test("status passes the call's unguarded-agents result to statusAnswer", async () => {
   const answered = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ({ ok: true, agents: ["build"] }) } as never)) as {
     readonly state: string
     readonly unguardedAgents: readonly string[]
@@ -64,9 +58,11 @@ test("status reads the announced { ok, agents | error } shape as well as the pin
   assert.deepEqual(answered.unguardedAgents, ["build"])
   const failed = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ({ ok: false, error: "the agent list could not be read" }) } as never)) as {
     readonly state: string
+    readonly unguardedAgents: readonly string[]
     readonly nextStep: string | null
   }
   assert.equal(failed.state, "error")
+  assert.deepEqual(failed.unguardedAgents, [])
   assert.match(String(failed.nextStep), /could not be read/)
 })
 

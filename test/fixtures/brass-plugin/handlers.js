@@ -1,5 +1,5 @@
 // The Brass test target's handler table: status, a note read, the action's plan and its commit.
-import { NO_ACCOUNTS, redactReason, STATUS_SCHEMA, statusAnswer } from "../../dist/accounts.js"
+import { NO_ACCOUNTS, STATUS_SCHEMA, statusAnswer } from "../../dist/accounts.js"
 import { COMMIT_INPUT, refusal, RegisterError } from "../../dist/register.js"
 
 const OBJECT = { type: "object", additionalProperties: true }
@@ -11,24 +11,6 @@ const NOTE = {
   additionalProperties: false,
 }
 
-/**
- * The agents the generated rules miss, as `call.unguardedAgents()` answers them.
- *
- * The pinned contract answers the list or throws; the freeze before v0.0.0 answers `{ ok, agents | error }`. Reading
- * either shape keeps this test target's status working across that re-pin.
- */
-async function unguardedOf(call) {
-  try {
-    const result = await call.unguardedAgents()
-    if (Array.isArray(result)) return { agents: result, problems: [] }
-    if (result?.ok === true && Array.isArray(result.agents)) return { agents: result.agents, problems: [] }
-    if (result?.ok === false && typeof result.error === "string") return { agents: [], problems: [result.error] }
-    return { agents: [], problems: ["the agent list could not be read"] }
-  } catch (error) {
-    return { agents: [], problems: [error instanceof Error ? error.message : String(error)] }
-  }
-}
-
 /** The target's handlers, over an in-memory note the commit writes. */
 export function createHandlers({ manifest, version, state }) {
   return {
@@ -37,14 +19,12 @@ export function createHandlers({ manifest, version, state }) {
       input: EMPTY,
       output: STATUS_SCHEMA,
       async run(_input, call) {
-        const unguarded = await unguardedOf(call)
         return statusAnswer({
           manifest,
           version,
           hostVersion: state.hostVersion,
           accounts: NO_ACCOUNTS,
-          problems: unguarded.problems.map((problem) => redactReason(String(problem))),
-          unguardedAgents: unguarded.agents,
+          unguardedAgents: await call.unguardedAgents(),
         })
       },
     },
