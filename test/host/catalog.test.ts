@@ -125,6 +125,32 @@ test("broker.read reads a plugin's source for a consumer, and refuses a request 
   assert.equal(noAccount.code, "ACCOUNT_REQUIRED")
 })
 
+test("a since read paged with a cursor keeps its window and returns each event once", async () => {
+  const harbour = listed(PACKAGES.harbour)
+  const base = { package: PACKAGES.harbour, version: harbour.version, manifestHash: harbour.hash, consumer: CONSUMER, source: "harbour.notes", account: "work", limit: 1 }
+  const seen: string[] = []
+  let cursor: string | undefined
+  for (let page = 0; page < 5; page += 1) {
+    const request = cursor === undefined ? { ...base, since: "2026-11-18T09:30:00.000Z" } : { ...base, cursor }
+    const answer = await harness.call("broker_read", { request })
+    assert.equal(answer.ok, true, answer.ok ? "" : answer.message)
+    assert.ok(answer.ok)
+    const body = answer.output as {
+      readonly offered: boolean
+      readonly ok: boolean
+      readonly value?: { readonly events?: readonly { readonly external_id: string }[]; readonly cursor?: string; readonly more?: boolean }
+    }
+    assert.equal(body.offered, true)
+    assert.equal(body.ok, true)
+    seen.push(...(body.value?.events ?? []).map((event) => event.external_id))
+    cursor = body.value?.cursor
+    if (body.value?.more !== true) break
+    assert.ok(typeof cursor === "string" && cursor.length > 0, "a page with more events answers a cursor")
+  }
+  assert.deepEqual(seen, ["note-work-1", "note-work-2"])
+  assert.equal(new Set(seen).size, seen.length, "no event is repeated across the page boundary")
+})
+
 test("broker.act previews, then commits with a valid grant, and refuses without one, with a replayed grant, and with a grant for another plan", async () => {
   const brass = listed(PACKAGES.brass)
   const base = { package: PACKAGES.brass, version: brass.version, manifestHash: brass.hash, consumer: CONSUMER, action: "brass.note" }

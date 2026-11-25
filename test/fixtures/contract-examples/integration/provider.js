@@ -27,6 +27,15 @@ const ACCOUNTS = {
     ],
     notes: [
       {
+        id: "note-work-0",
+        space: "space-research",
+        title: "Rehearsal checklist",
+        text: "The queue rehearsal passed. The runbook is ready for review.",
+        url: "https://docs.harbour.example.com/notes/note-work-0",
+        updated_at: "2026-11-18T09:00:00.000Z",
+        author: { id: "mailto:ana.silva@harbour.example.com", name: "Ana Silva" },
+      },
+      {
         id: "note-work-1",
         space: "space-research",
         title: "Queue migration notes",

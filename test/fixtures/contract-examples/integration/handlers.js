@@ -130,7 +130,10 @@ export function createHandlers({ provider, manifest, options = {}, version, host
           throw new RegisterError(refusal("SOURCE_UNKNOWN", `${PLUGIN} has no source ${request.source}`, `Read the ${SOURCE} source.`))
         }
         const scope = request.scope
+        // The cursor carries the whole window: its position and the `since` filter that shaped it. A cursor page
+        // re-applies that filter, so an event outside the window can never shift the position and repeat one.
         let position = 0
+        let since = request.cursor === undefined && request.since !== undefined ? new Date(request.since).toISOString() : undefined
         if (request.cursor !== undefined) {
           const decoded = decodeBoundCursor(binding(call.account, scope), request.cursor)
           if (!decoded.ok) {
@@ -140,12 +143,18 @@ export function createHandlers({ provider, manifest, options = {}, version, host
             throw new RegisterError(refusal("CURSOR_INVALID", "the cursor carries no page Harbour issued", "Read again without a cursor."))
           }
           position = decoded.state.position
+          if (decoded.state.since !== undefined) {
+            if (typeof decoded.state.since !== "string" || !Number.isFinite(Date.parse(decoded.state.since))) {
+              throw new RegisterError(refusal("CURSOR_INVALID", "the cursor carries no window Harbour issued", "Read again without a cursor."))
+            }
+            since = decoded.state.since
+          }
         }
         try {
           const answer = await provider.listNotes({
             account: call.account,
             ...(scope?.spaces === undefined ? {} : { spaces: scope.spaces }),
-            ...(request.cursor !== undefined || request.since === undefined ? {} : { since: new Date(request.since).toISOString() }),
+            ...(since === undefined ? {} : { since }),
             position,
             limit: request.limit,
           })
@@ -155,7 +164,7 @@ export function createHandlers({ provider, manifest, options = {}, version, host
           return eventsListResult(
             { source: SOURCE, account: call.account, owner: owner.owner },
             events.slice(0, fit),
-            encodeBoundCursor(binding(call.account, scope), { position: position + fit }),
+            encodeBoundCursor(binding(call.account, scope), { position: position + fit, ...(since === undefined ? {} : { since }) }),
             answer.more || fit < events.length,
             { plugin: PACKAGE, asOf: provider.asOf },
           )
