@@ -11,6 +11,7 @@ import { assertHost, register } from "@we-the-rebel-alliance/plugin-contract/reg
 import { handlersFor, type HandlerRuntime } from "./handlers/index.ts"
 import { callHost } from "./host/broker.ts"
 import { manifest, version } from "./manifest.ts"
+import { loadSkills, registerSkills } from "./skills.ts"
 import { watchInstalledSet } from "./watch.ts"
 
 /** The host's time zone; a relative `since` is resolved in it. */
@@ -38,9 +39,22 @@ export default Plugin.define({
     }
 
     const registration = await register(context, manifest, handlersFor(runtime))
-    const stopWatching = await watchInstalledSet({ context, bus: registration.bus })
+    let skillRegistration: Awaited<ReturnType<typeof registerSkills>> | undefined
+    let stopWatching: (() => void) | undefined
+    try {
+      // `register` wires methods, not skills: a skill file nothing adds is a file no agent ever sees.
+      const loaded = loadSkills()
+      if (loaded.problems.length > 0) throw new Error(loaded.problems.join("; "))
+      skillRegistration = await registerSkills(context.skill, loaded.skills)
+      stopWatching = await watchInstalledSet({ context, bus: registration.bus })
+    } catch (error) {
+      await skillRegistration?.dispose().catch(() => undefined)
+      await registration.dispose()
+      throw error
+    }
     return async () => {
-      stopWatching()
+      stopWatching?.()
+      await skillRegistration?.dispose().catch(() => undefined)
       await registration.dispose()
     }
   },

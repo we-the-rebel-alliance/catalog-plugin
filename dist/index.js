@@ -13849,6 +13849,59 @@ var packageName = file2.name;
 var version2 = file2.version;
 var manifest = checked.value;
 
+// src/skills.ts
+import { readdirSync as readdirSync2, readFileSync as readFileSync4, statSync as statSync2 } from "node:fs";
+import { join as join3 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
+import { Skill } from "@opencode/plugin";
+var SKILLS_DIR = fileURLToPath2(new URL("../skills/", import.meta.url));
+var skillError = (name, problem) => new Error(`OPTIONS_INVALID: The "${name}" skill was not loaded: skills/${name}/SKILL.md ${problem}. Next step: fix the skill's frontmatter or file.`);
+function parseSkill(name, path, text4) {
+  const normalised = text4.replace(/\r\n/g, "\n");
+  const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(normalised);
+  if (match === null) throw skillError(name, "has no frontmatter");
+  const fields = new Map(
+    match[1].split("\n").filter((line3) => line3.includes(":")).map((line3) => [line3.slice(0, line3.indexOf(":")).trim(), line3.slice(line3.indexOf(":") + 1).trim().replace(/^(["'])(.*)\1$/, "$2")])
+  );
+  if (fields.get("name") !== name) throw skillError(name, `must be named "${name}" in its frontmatter`);
+  const description = fields.get("description");
+  if (description === void 0 || description === "") throw skillError(name, "has no description");
+  const content = match[2].trim();
+  if (content === "") throw skillError(name, "has no content");
+  return {
+    id: Skill.ID.make(name),
+    name: Skill.Name.make(name),
+    description,
+    path: Skill.Info.fields.path.make(path),
+    content
+  };
+}
+function loadSkills(directory = SKILLS_DIR) {
+  const skills = [];
+  const problems = [];
+  let entries;
+  try {
+    entries = readdirSync2(directory).sort();
+  } catch (error2) {
+    return { skills, problems: [`OPTIONS_INVALID: The skills directory could not be read (${String(error2.code ?? error2)}). Next step: reinstall the plugin.`] };
+  }
+  for (const name of entries) {
+    const path = join3(directory, name, "SKILL.md");
+    try {
+      if (!statSync2(path).isFile()) continue;
+      skills.push(parseSkill(name, path, readFileSync4(path, "utf8")));
+    } catch (error2) {
+      problems.push(error2 instanceof Error ? error2.message : String(error2));
+    }
+  }
+  return { skills, problems };
+}
+function registerSkills(skill, skills) {
+  return skill.transform((editor) => {
+    for (const info of skills) editor.add(info);
+  });
+}
+
 // src/watch.ts
 function entryOf(plugin2) {
   const source2 = plugin2.source;
@@ -13907,9 +13960,21 @@ var src_default = Plugin.define({
       host: (call) => callHost(context, call.agent)
     };
     const registration = await register(context, manifest, handlersFor(runtime));
-    const stopWatching = await watchInstalledSet({ context, bus: registration.bus });
+    let skillRegistration;
+    let stopWatching;
+    try {
+      const loaded = loadSkills();
+      if (loaded.problems.length > 0) throw new Error(loaded.problems.join("; "));
+      skillRegistration = await registerSkills(context.skill, loaded.skills);
+      stopWatching = await watchInstalledSet({ context, bus: registration.bus });
+    } catch (error2) {
+      await skillRegistration?.dispose().catch(() => void 0);
+      await registration.dispose();
+      throw error2;
+    }
     return async () => {
-      stopWatching();
+      stopWatching?.();
+      await skillRegistration?.dispose().catch(() => void 0);
       await registration.dispose();
     };
   }

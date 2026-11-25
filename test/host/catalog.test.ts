@@ -13,10 +13,14 @@
  */
 import assert from "node:assert/strict"
 import { generateKeyPairSync, randomUUID } from "node:crypto"
+import { readdirSync } from "node:fs"
+import { join } from "node:path"
 import { after, before, test } from "node:test"
+import { fileURLToPath } from "node:url"
 import { signGrant } from "@we-the-rebel-alliance/plugin-contract/grant"
 import { startHost, PACKAGES, type Harness } from "./harness.ts"
 
+const here = fileURLToPath(new URL("../..", import.meta.url))
 const KID = "host_lane"
 const CONSUMER = "test-app"
 const keys = generateKeyPairSync("ed25519")
@@ -123,6 +127,15 @@ test("broker.read reads a plugin's source for a consumer, and refuses a request 
   assert.equal(noAccount.ok, false)
   assert.ok(!noAccount.ok)
   assert.equal(noAccount.code, "ACCOUNT_REQUIRED")
+})
+
+test("every skills/*/SKILL.md is registered on the real host", async () => {
+  const registered = new Set((await harness.skills()).map((skill) => skill.id))
+  const directories = readdirSync(join(here, "skills"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+  assert.ok(directories.length > 0, "the package ships at least one skill")
+  for (const name of directories) assert.ok(registered.has(name), `the ${name} skill is registered after load`)
 })
 
 test("a since read paged with a cursor keeps its window and returns each event once", async () => {

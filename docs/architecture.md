@@ -9,6 +9,7 @@
 | Requests | `src/requests.ts` | the two wire requests and the relayed status shape, checked strictly |
 | Handlers | `src/handlers/` | one handler per method: the input, the answer schema, the description and the work |
 | Host | `src/host/` | the contract's `ReadHost` over OpenCode, the target resolution and the account resolution |
+| Skills | `src/skills.ts` | reads `skills/*/SKILL.md`, validates each, and registers it with `ctx.skill.transform` |
 | Watch | `src/watch.ts` | the installed-set signature and the one `changed` nudge |
 | Failures | `src/failure.ts` | a contract failure reported in the contract's form, and a redacted unknown one |
 
@@ -23,15 +24,17 @@ place that opens a session or calls another plugin's RPC.
 2. `assertHost` refuses an OpenCode release outside `>=2.4.1 <2.5.0`, unless `allowUntestedHost` is set.
 3. `register` checks the handler table against `capabilities.methods`, generates the access rules into every agent,
    registers the tools and the single RPC id, and builds the typed bus from that one registration.
-4. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`; it emits through
+4. `src/skills.ts` reads and validates `skills/*/SKILL.md` and registers each with `ctx.skill.transform`, because the
+   contract's `register` wires methods, not skills.
+5. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`; it emits through
    `registration.bus`.
-5. A call passes the register's one gate (`catalog.<method>` on the method's resources), is validated against the
+6. A call passes the register's one gate (`catalog.<method>` on the method's resources), is validated against the
    handler's schema, and runs the handler.
-6. A broker handler resolves the target package, version and manifest hash; reads the target's `status` for its account
+7. A broker handler resolves the target package, version and manifest hash; reads the target's `status` for its account
    aliases; and calls the contract's `read` or `act` module with a `ReadHost` bound to the calling session's agent.
-7. `read`/`act` opens a session whose rules are exactly the grant's, calls the target's `status` and its method over RPC,
+8. `read`/`act` opens a session whose rules are exactly the grant's, calls the target's `status` and its method over RPC,
    checks the answer, and closes the session in a `finally`.
-8. An act commit sends `{ sessionID, input: { planId }, grant, consumer }` to the target; the target's `register`
+9. An act commit sends `{ sessionID, input: { planId }, grant, consumer }` to the target; the target's `register`
    verifies the grant and spends the plan.
 
 ## The host
@@ -72,6 +75,7 @@ plugin's lifetime; that subscription is not a per-request hook.
 | `ctx.session.create`, `ctx.session.remove` | `src/host/broker.ts` |
 | `ctx.rpc(definition)` | `src/host/broker.ts` |
 | `ctx.event.subscribe` | `src/watch.ts` |
+| `ctx.skill.transform` | `src/skills.ts` |
 | `ctx.agent.list` | `register`, for `call.unguardedAgents()` |
 | `ctx.agent.transform`, `ctx.tool.transform`, `ctx.rpc.register`, `ctx.permission.assert` | `register` only |
 
