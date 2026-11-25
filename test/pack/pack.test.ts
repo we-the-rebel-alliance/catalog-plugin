@@ -9,6 +9,7 @@
  */
 import assert from "node:assert/strict"
 import { execFileSync, spawn, type ChildProcess } from "node:child_process"
+import { randomUUID } from "node:crypto"
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { createServer } from "node:net"
 import { tmpdir } from "node:os"
@@ -70,8 +71,8 @@ test("the packed tarball installs with opencode plugin add and starts", async ()
     XDG_CACHE_HOME: join(home, "cache"),
     XDG_DATA_HOME: join(home, "data"),
     XDG_STATE_HOME: join(home, "state"),
-    // A non-interactive server generates a password and prints it; a known one lets `opencode api` authenticate.
-    OPENCODE_SERVER_PASSWORD: "catalog-pack-test",
+    // A non-interactive server generates a password and prints it; one per run lets `opencode api` authenticate.
+    OPENCODE_SERVER_PASSWORD: randomUUID(),
     NO_COLOR: "1",
   }
   let server: ChildProcess | undefined
