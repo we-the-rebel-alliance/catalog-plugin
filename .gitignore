@@ -1,0 +1,5 @@
+.lane/
+node_modules/
+release/
+*.tgz
+.DS_Store

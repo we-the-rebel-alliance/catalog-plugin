@@ -1,0 +1,185 @@
+{
+  "name": "@we-the-rebel-alliance/catalog-plugin",
+  "version": "0.0.0",
+  "description": "Give an agent one trusted door to the installed OpenCode plugins: their manifests and status, a fenced read of a plugin's source, and a previewed, host-granted action.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/we-the-rebel-alliance/catalog-plugin.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    "./server": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "assets",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "capabilities": {
+    "version": 1,
+    "plugin": {
+      "name": "catalog",
+      "title": "Catalog",
+      "summary": "One trusted door for apps: list the installed plugins with their status, read a plugin's source for a consumer, and preview then commit a plugin's action under the host-signed grant.",
+      "vendor": {
+        "id": "we-the-rebel-alliance",
+        "name": "We The Rebel Alliance",
+        "domain": "github.com"
+      },
+      "icons": [
+        {
+          "src": "assets/icon.svg",
+          "type": "image/svg+xml"
+        },
+        {
+          "src": "assets/icon-128.png",
+          "type": "image/png"
+        },
+        {
+          "src": "assets/icon-256.png",
+          "type": "image/png"
+        }
+      ],
+      "host": {
+        "opencode": ">=2.4.1 <2.5.0",
+        "tested": [
+          "2.4.1"
+        ]
+      }
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "access": {
+          "type": "string",
+          "enum": [
+            "all",
+            "ask-changes",
+            "read-only"
+          ],
+          "default": "all",
+          "description": "How much the plugin's methods may do."
+        },
+        "allowUntestedHost": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start outside the tested OpenCode range."
+        },
+        "grants": {
+          "type": "array",
+          "description": "The consumer grants this person consented to: one consumer, one source or action, one account, one scope and the installed manifest hash.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "account": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "manifestHash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "disabled": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "consumer",
+              "account",
+              "manifestHash"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "methods": {
+      "status": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "list": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_read": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_act": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_act_commit": {
+        "class": "write",
+        "effect": "ask",
+        "accounts": "none"
+      }
+    },
+    "sources": [],
+    "actions": [],
+    "events": {
+      "changed": {}
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/unit/**/*.test.ts\" \"test/host/**/*.test.ts\"",
+    "fixtures": "node scripts/record-fixture.mjs",
+    "docs": "plugin-kit docs",
+    "docs:check": "plugin-kit docs --check",
+    "check": "npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm test && npm run test:pack && plugin-kit check && plugin-kit docs --check",
+    "bundle": "node scripts/build.mjs",
+    "test:pack": "node --test \"test/pack/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@opencode/plugin": "2.4.1",
+    "@opencode/sdk": "2.4.1",
+    "@types/node": "24.19.2",
+    "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#v0.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "yaml": "2.9.1"
+  },
+  "homepage": "https://github.com/we-the-rebel-alliance/catalog-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/we-the-rebel-alliance/catalog-plugin/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "plugin-contract",
+    "catalog"
+  ]
+}
