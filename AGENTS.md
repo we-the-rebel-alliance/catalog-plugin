@@ -82,8 +82,15 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
 
 - **Gate the host first.** `assertHost(ctx, manifest)` at the top of `setup` refuses an untested release with
   `HOST_UNTESTED`, unless `options.allowUntestedHost` is true.
-- **Ask `register` for the bus.** `register(..., { bus: true })` returns `registration.bus` and the watcher emits
-  `changed` through it. Do not keep a mutable placeholder or call `createBus` around it.
+- **Emit through `call.bus`.** `register` builds the typed writer from its one RPC registration, returns it as
+  `registration.bus` and gives every handler call `call.bus`; there is no flag and no placeholder. Do not call
+  `ctx.rpc.register` a second time or wrap a registration yourself. Only the manifest's declared events are registered.
+- **Answer status with `statusAnswer`.** `statusAnswer` from `accounts` takes the manifest, the installed and host
+  versions, the account states, the problems the handler knows and the unguarded agents, and builds the `STATUS_SCHEMA`
+  answer. The agents come from `call.unguardedAgents()`, so no state is kept between `register` and the handler.
+- **Reuse the output schemas.** `STATUS_SCHEMA` from `accounts` is the `status` answer; `PAGE_SCHEMA`, `PROBE_SCHEMA`
+  and `LIST_OPTIONS_SCHEMA` from `events` are an events source's `events_list`, `probe` and `list_*` answers. Copying
+  those shapes into the plugin is drift.
 - **One RPC registration.** `register` owns it. A second `ctx.rpc.register` under `catalog` would hide the methods.
 - **The fence is the contract's.** `read` and `act` build the session rules from the request's grant fields; the catalog
   adds no operation and substitutes no account.

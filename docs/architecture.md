@@ -21,9 +21,10 @@ place that opens a session or calls another plugin's RPC.
 
 1. OpenCode loads `dist/index.js` through the package's `./server` export and calls `setup(ctx)`.
 2. `assertHost` refuses an OpenCode release outside `>=2.4.1 <2.5.0`, unless `allowUntestedHost` is set.
-3. `register` checks the handler table against `capabilities.methods`, generates the access rules into every agent, and
-   registers the tools and the single RPC id.
-4. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`.
+3. `register` checks the handler table against `capabilities.methods`, generates the access rules into every agent,
+   registers the tools and the single RPC id, and builds the typed bus from that one registration.
+4. The installed-set watcher records the host's plugin inventory and subscribes to `plugin.updated`; it emits through
+   `registration.bus`.
 5. A call passes the register's one gate (`<name>.<method>` on the method's resources), is validated against the
    handler's schema, and runs the handler.
 6. A broker handler resolves the target package, version and manifest hash; reads the target's `status` for its account
@@ -71,7 +72,7 @@ plugin's lifetime; that subscription is not a per-request hook.
 | `ctx.session.create`, `ctx.session.remove` | `src/host/broker.ts` |
 | `ctx.rpc(definition)` | `src/host/broker.ts` |
 | `ctx.event.subscribe` | `src/watch.ts` |
-| `ctx.agent.list` | status, for `unguardedAgents` |
+| `ctx.agent.list` | `register`, for `call.unguardedAgents()` |
 | `ctx.agent.transform`, `ctx.tool.transform`, `ctx.rpc.register`, `ctx.permission.assert` | `register` only |
 
 ## Build

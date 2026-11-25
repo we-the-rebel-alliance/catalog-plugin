@@ -35,7 +35,7 @@ export default {
       },
     }
 
-    const state = { hostVersion: context.app.version, access: undefined, agents: undefined, writes: [] }
+    const state = { hostVersion: context.app.version, writes: [] }
     const registration = await register(context, manifest, createHandlers({ manifest, version: pkg.version, state }), {
       grant: {
         keys: { keys: { [grant.kid]: grant.publicKey } },
@@ -43,8 +43,6 @@ export default {
         store,
       },
     })
-    state.access = registration.access
-    state.agents = async () => (await context.agent.list()).data
     return () => registration.dispose()
   },
 }

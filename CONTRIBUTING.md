@@ -34,7 +34,7 @@ and start the embedded `@opencode/sdk` 2.4.1 host. They need no network and no a
 ## The contract pin
 
 `package.json` pins the contract to
-`github:we-the-rebel-alliance/plugin-contract#0833f61a5ddc7a4583b360145cc8e9cd8cf989f2` while the contract is
+`github:we-the-rebel-alliance/plugin-contract#79da83cfa1668c30a673e6bb392d3122155e6dc1` while the contract is
 unreleased. When the lead tags `v0.0.0`, the pin moves to `github:we-the-rebel-alliance/plugin-contract#v0.0.0` and moves
 with the contract's release. Never copy a contract module into this repository.
 

@@ -23,14 +23,11 @@ interface Fixture {
 const fixture = JSON.parse(readFileSync(new URL("../../fixtures/conformance.json", import.meta.url), "utf8")) as Fixture
 
 const runtime: HandlerRuntime = {
-  plugin: manifest.plugin.name,
+  manifest,
   version,
   hostVersion: "2.4.1",
-  tested: manifest.plugin.host.tested,
   clock: () => Date.parse("2026-11-25T09:00:00.000Z"),
   timeZone: "UTC",
-  agents: async () => [],
-  rules: () => [],
   host: () => {
     throw new Error("no host in this test")
   },
@@ -42,7 +39,7 @@ test("the fixture records this package and this manifest's namespace line", () =
 })
 
 test("the recorded status is the status handler's own answer", async () => {
-  const answer = await handlersFor(runtime).status!.run({}, {} as never)
+  const answer = await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => [] } as never)
   assert.deepEqual(fixture.events?.status, answer)
   assert.equal(checkStatus(fixture.events?.status).ok, true)
 })
@@ -50,6 +47,27 @@ test("the recorded status is the status handler's own answer", async () => {
 test("the declared bus event is the recorded one, and it is the only one", () => {
   assert.deepEqual(Object.keys(manifest.events), ["changed"])
   assert.deepEqual([...(fixture.events?.emitted ?? [])], ["changed"])
+})
+
+test("status reads the announced { ok, agents | error } shape as well as the pinned list", async () => {
+  const listed = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ["build"] } as never)) as {
+    readonly state: string
+    readonly unguardedAgents: readonly string[]
+  }
+  assert.equal(listed.state, "ready")
+  assert.deepEqual(listed.unguardedAgents, ["build"])
+  const answered = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ({ ok: true, agents: ["build"] }) } as never)) as {
+    readonly state: string
+    readonly unguardedAgents: readonly string[]
+  }
+  assert.equal(answered.state, "ready")
+  assert.deepEqual(answered.unguardedAgents, ["build"])
+  const failed = (await handlersFor(runtime).status!.run({}, { unguardedAgents: async () => ({ ok: false, error: "the agent list could not be read" }) } as never)) as {
+    readonly state: string
+    readonly nextStep: string | null
+  }
+  assert.equal(failed.state, "error")
+  assert.match(String(failed.nextStep), /could not be read/)
 })
 
 test("the recorded non-read input passes the act parser, so T1 reaches the confirmation refusal", () => {

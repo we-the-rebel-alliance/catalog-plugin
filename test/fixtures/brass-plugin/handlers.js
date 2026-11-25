@@ -1,9 +1,7 @@
 // The Brass test target's handler table: status, a note read, the action's plan and its commit.
-import { NO_ACCOUNTS, redactReason, STATUS_SCHEMA } from "../../dist/accounts.js"
-import { unguardedAgents } from "../../dist/access.js"
+import { NO_ACCOUNTS, redactReason, STATUS_SCHEMA, statusAnswer } from "../../dist/accounts.js"
 import { COMMIT_INPUT, refusal, RegisterError } from "../../dist/register.js"
 
-const PLUGIN = "brass"
 const OBJECT = { type: "object", additionalProperties: true }
 const EMPTY = { type: "object", properties: {}, additionalProperties: false }
 const NOTE = {
@@ -13,35 +11,41 @@ const NOTE = {
   additionalProperties: false,
 }
 
+/**
+ * The agents the generated rules miss, as `call.unguardedAgents()` answers them.
+ *
+ * The pinned contract answers the list or throws; the freeze before v0.0.0 answers `{ ok, agents | error }`. Reading
+ * either shape keeps this test target's status working across that re-pin.
+ */
+async function unguardedOf(call) {
+  try {
+    const result = await call.unguardedAgents()
+    if (Array.isArray(result)) return { agents: result, problems: [] }
+    if (result?.ok === true && Array.isArray(result.agents)) return { agents: result.agents, problems: [] }
+    if (result?.ok === false && typeof result.error === "string") return { agents: [], problems: [result.error] }
+    return { agents: [], problems: ["the agent list could not be read"] }
+  } catch (error) {
+    return { agents: [], problems: [error instanceof Error ? error.message : String(error)] }
+  }
+}
+
 /** The target's handlers, over an in-memory note the commit writes. */
 export function createHandlers({ manifest, version, state }) {
-  const range = manifest.plugin.host.opencode
-  const tested = manifest.plugin.host.tested
-
   return {
     status: {
       description: "Read Brass's state, its host range and its (empty) account list.",
       input: EMPTY,
       output: STATUS_SCHEMA,
-      async run() {
-        let unguarded = []
-        let nextStep = null
-        if (state.access !== undefined && state.agents !== undefined) {
-          try {
-            unguarded = [...unguardedAgents(await state.agents(), state.access.rules)]
-          } catch (error) {
-            nextStep = redactReason(error instanceof Error ? error.message : String(error)).slice(0, 200)
-          }
-        }
-        return {
-          name: PLUGIN,
+      async run(_input, call) {
+        const unguarded = await unguardedOf(call)
+        return statusAnswer({
+          manifest,
           version,
-          host: { version: state.hostVersion ?? tested[0], range, tested },
-          state: nextStep === null ? "ready" : "error",
-          accounts: [...NO_ACCOUNTS],
-          unguardedAgents: unguarded,
-          nextStep,
-        }
+          hostVersion: state.hostVersion,
+          accounts: NO_ACCOUNTS,
+          problems: unguarded.problems.map((problem) => redactReason(String(problem))),
+          unguardedAgents: unguarded.agents,
+        })
       },
     },
 

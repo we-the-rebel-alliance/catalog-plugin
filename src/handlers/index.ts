@@ -5,7 +5,7 @@
  * permission assertions and the answer checks. The catalog has no provider: its "provider" is OpenCode's own host, and
  * `src/host/` is the only place that touches sessions and the target plugins' RPC.
  */
-import type { AgentLike, PermissionRule } from "@we-the-rebel-alliance/plugin-contract/access"
+import type { Manifest } from "@we-the-rebel-alliance/plugin-contract/manifest"
 import type { HandlerTable, MethodCall } from "@we-the-rebel-alliance/plugin-contract/register"
 import type { CallHost } from "../host/broker.ts"
 import { brokerActCommitHandler } from "./broker-act-commit.ts"
@@ -16,22 +16,16 @@ import { statusHandler } from "./status.ts"
 
 /** The plugin state the handlers may read, built once in `setup`. */
 export interface HandlerRuntime {
-  /** The plugin's id, as the manifest names it. */
-  readonly plugin: string
+  /** The installed manifest, which `statusAnswer` states and which names the plugin. */
+  readonly manifest: Manifest
   /** The package version, which `status` reports. */
   readonly version: string
   /** The OpenCode release the plugin runs on. */
   readonly hostVersion: string
-  /** The releases the manifest's `tested` list names. */
-  readonly tested: readonly string[]
   /** The clock a listing's `asOf` is stamped with; tests pass a fixed one. */
   readonly clock: () => number
   /** The host's time zone, in which a relative `since` is resolved. */
   readonly timeZone: string
-  /** The agents OpenCode has now, for `status.unguardedAgents`. */
-  readonly agents: () => Promise<readonly AgentLike[]>
-  /** The access rules `register` generated. */
-  readonly rules: () => readonly PermissionRule[]
   /** The host a brokered call runs through, bound to the calling session's agent. */
   readonly host: (call: MethodCall) => CallHost
 }

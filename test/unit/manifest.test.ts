@@ -7,14 +7,11 @@ import { manifest, packageName } from "../../src/manifest.ts"
 
 /** A runtime the table can be built from; no handler runs in this test. */
 const runtime: HandlerRuntime = {
-  plugin: "catalog",
+  manifest,
   version: "0.0.0",
   hostVersion: "2.4.1",
-  tested: ["2.4.1"],
   clock: () => 0,
   timeZone: "UTC",
-  agents: async () => [],
-  rules: () => [],
   host: () => {
     throw new Error("no host in this test")
   },

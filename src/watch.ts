@@ -34,10 +34,10 @@ async function inventorySignature(context: Pick<WatchContext, "plugin">): Promis
  * Watch the installed set and emit one `changed` per change. Returns the stop function; a closed host ends the stream
  * and the nudge is lost, which is what the contract expects: pull is the truth, push is only a nudge.
  */
-export async function watchInstalledSet(options: { readonly context: WatchContext; readonly bus: Bus | undefined }): Promise<() => void> {
+export async function watchInstalledSet(options: { readonly context: WatchContext; readonly bus: Bus }): Promise<() => void> {
   const controller = new AbortController()
   const emit = async (): Promise<void> => {
-    await options.bus?.emit("changed", { capability: "catalog.plugins", account: "default", reason: "installed" })
+    await options.bus.emit("changed", { capability: "catalog.plugins", account: "default", reason: "installed" })
   }
   let previous = await inventorySignature(options.context)
   const loop = async (): Promise<void> => {
