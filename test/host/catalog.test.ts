@@ -13,10 +13,11 @@
  */
 import assert from "node:assert/strict"
 import { generateKeyPairSync, randomUUID } from "node:crypto"
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { after, before, test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { parse as parseYaml } from "yaml"
 import { signGrant } from "@we-the-rebel-alliance/plugin-contract/grant"
 import { startHost, PACKAGES, type Harness } from "./harness.ts"
 
@@ -129,17 +130,33 @@ test("broker.read reads a plugin's source for a consumer, and refuses a request 
   assert.equal(noAccount.code, "ACCOUNT_REQUIRED")
 })
 
-test("every skills/*/SKILL.md is registered on the real host", async () => {
+test("every skills/*/SKILL.md is registered with its own description", async () => {
   // The host runs in an empty temporary project, so OpenCode's own discovery of `<project>/skills/` cannot supply the
-  // skill: only the plugin's ctx.skill.transform can. The negative check (registerSkills removed) fails at the next
-  // assertion with "the catalog skill is registered after load".
+  // skill: only the plugin's ctx.skill.transform can. The negative check (registerSkills removed) fails at the
+  // registration assertion; the description check catches a first-line-only reader of a folded block.
   assert.equal(existsSync(join(harness.directory, "skills")), false, "the host project has no skills/ of its own")
-  const registered = new Set((await harness.skills()).map((skill) => skill.id))
+  const registered = new Map((await harness.skills()).map((skill) => [skill.id, skill]))
   const directories = readdirSync(join(here, "skills"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
   assert.ok(directories.length > 0, "the package ships at least one skill")
-  for (const name of directories) assert.ok(registered.has(name), `the ${name} skill is registered after load`)
+  for (const name of directories) {
+    const text = readFileSync(join(here, "skills", name, "SKILL.md"), "utf8").replace(/\r\n/g, "\n")
+    const frontmatter = /^---\n([\s\S]*?)\n---/.exec(text)?.[1]
+    assert.ok(frontmatter !== undefined, `${name} has YAML frontmatter`)
+    const meta = parseYaml(frontmatter) as { readonly name?: unknown; readonly description?: unknown }
+    assert.equal(meta.name, name, `${name}'s frontmatter name is its directory`)
+    assert.equal(typeof meta.description, "string", `${name} has a description`)
+    const description = String(meta.description)
+    assert.notEqual(description.trim(), "", `${name}'s description is not empty`)
+    assert.notEqual(description, ">", `${name}'s description is not the raw folded marker`)
+    assert.notEqual(description, "|", `${name}'s description is not the raw literal marker`)
+    const skill = registered.get(name)
+    assert.ok(skill !== undefined, `the ${name} skill is registered after load`)
+    assert.equal(skill.description, description, `${name}'s registered description equals its SKILL.md text`)
+    assert.notEqual(skill.description, ">", `${name}'s registered description is not ">"`)
+    assert.notEqual(skill.description, "|", `${name}'s registered description is not "|"`)
+  }
 })
 
 test("a since read paged with a cursor keeps its window and returns each event once", async () => {

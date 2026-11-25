@@ -45,7 +45,7 @@ export interface Harness {
   /** Add one SDK plugin to the running host, as an install would change the inventory. */
   addPlugin(): Promise<void>
   /** The host's skill inventory for the project, as `skill.list` answers it. */
-  skills(): Promise<readonly { readonly id: string; readonly name: string }[]>
+  skills(): Promise<readonly { readonly id: string; readonly name: string; readonly description: string }[]>
   /** The host's `/api/event` stream, filtered to the types named. */
   events(types: readonly string[]): AsyncIterable<{ readonly type: string; readonly data?: unknown }>
   /** Close the host and remove the temporary cache. */
@@ -64,7 +64,7 @@ interface SdkHost {
     reply(input: { readonly sessionID: string; readonly requestID: string; readonly decision: "once" | "always" | "reject" }): Promise<void>
   }
   readonly events: { subscribe(options: { readonly types?: readonly string[]; readonly signal?: AbortSignal }): AsyncIterable<{ readonly type: string; readonly data?: unknown }> }
-  readonly skill: { list(input: { readonly location: { readonly directory: string } }): Promise<{ readonly data: readonly { readonly id?: string; readonly name?: string }[] }> }
+  readonly skill: { list(input: { readonly location: { readonly directory: string } }): Promise<{ readonly data: readonly { readonly id?: string; readonly name?: string; readonly description?: string }[] }> }
   readonly plugin: ((plugin: { readonly id: string; setup(): void }) => Promise<void>) & { list(input?: unknown): Promise<{ readonly data: readonly unknown[] }> }
   close(): Promise<void>
 }
@@ -224,7 +224,9 @@ export async function startHost(options: { readonly grant: GrantKey; readonly ca
       },
       async skills() {
         const listed = await host.skill.list({ location: { directory } })
-        return listed.data.filter((skill): skill is { readonly id: string; readonly name: string } => typeof skill.id === "string" && typeof skill.name === "string")
+        return listed.data
+          .filter((skill): skill is { readonly id: string; readonly name: string; readonly description?: string } => typeof skill.id === "string" && typeof skill.name === "string")
+          .map((skill) => ({ id: skill.id, name: skill.name, description: typeof skill.description === "string" ? skill.description : "" }))
       },
       events(types) {
         return host.events.subscribe({ types: [...types] })

@@ -1,6 +1,8 @@
 ---
 name: catalog
-description: Discover the installed plugins and broker a read or a confirmed action through the catalog's one RPC id when you cannot read the plugin packages. Not for calling an installed plugin directly.
+description: >
+  Discover the installed plugins and broker a read or a confirmed action through the catalog's one RPC id when you
+  cannot read the plugin packages. Not for calling an installed plugin directly.
 ---
 
 # Catalog

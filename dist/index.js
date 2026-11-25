@@ -13856,24 +13856,82 @@ import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { Skill } from "@opencode/plugin";
 var SKILLS_DIR = fileURLToPath2(new URL("../skills/", import.meta.url));
 var skillError = (name, problem) => new Error(`OPTIONS_INVALID: The "${name}" skill was not loaded: skills/${name}/SKILL.md ${problem}. Next step: fix the skill's frontmatter or file.`);
-function parseSkill(name, path, text4) {
+var BLOCK_SCALAR = /^([>|])([+-]?)$/;
+function unquote(value) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') || trimmed.startsWith("'") && trimmed.endsWith("'")) return trimmed.slice(1, -1);
+  return trimmed;
+}
+function blockScalar(style, body) {
+  const nonEmpty2 = body.find((line3) => line3.trim() !== "");
+  const indent = nonEmpty2 === void 0 ? 0 : nonEmpty2.match(/^\s*/)?.[0].length ?? 0;
+  const lines = body.map((line3) => line3.slice(Math.min(indent, line3.match(/^\s*/)?.[0].length ?? 0)));
+  let text4;
+  if (style.startsWith(">")) {
+    const folded = [];
+    for (const line3 of lines) {
+      if (line3.trim() === "") {
+        if (folded.length > 0) folded.push("");
+        continue;
+      }
+      if (folded.length === 0 || folded[folded.length - 1] === "") folded.push(line3.trim());
+      else folded[folded.length - 1] += ` ${line3.trim()}`;
+    }
+    text4 = folded.join("\n");
+  } else {
+    text4 = lines.join("\n");
+  }
+  text4 = text4.replace(/\n+$/, "");
+  return style.endsWith("-") ? text4 : `${text4}
+`;
+}
+function splitSkill(text4) {
   const normalised = text4.replace(/\r\n/g, "\n");
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(normalised);
-  if (match === null) throw skillError(name, "has no frontmatter");
-  const fields = new Map(
-    match[1].split("\n").filter((line3) => line3.includes(":")).map((line3) => [line3.slice(0, line3.indexOf(":")).trim(), line3.slice(line3.indexOf(":") + 1).trim().replace(/^(["'])(.*)\1$/, "$2")])
-  );
-  if (fields.get("name") !== name) throw skillError(name, `must be named "${name}" in its frontmatter`);
-  const description = fields.get("description");
-  if (description === void 0 || description === "") throw skillError(name, "has no description");
-  const content = match[2].trim();
-  if (content === "") throw skillError(name, "has no content");
+  if (match === null) throw new Error("has no frontmatter");
+  const lines = match[1].split("\n");
+  const fields = /* @__PURE__ */ new Map();
+  for (let index = 0; index < lines.length; index += 1) {
+    const line3 = lines[index];
+    if (line3.trim() === "" || line3.trimStart().startsWith("#") || /^\s/.test(line3)) continue;
+    const at = line3.indexOf(":");
+    if (at <= 0) continue;
+    const key = line3.slice(0, at).trim();
+    const raw = line3.slice(at + 1).trim();
+    const block = BLOCK_SCALAR.exec(raw);
+    if (block !== null) {
+      const body = [];
+      let next = index + 1;
+      for (; next < lines.length; next += 1) {
+        const candidate = lines[next];
+        if (candidate.trim() !== "" && !/^\s/.test(candidate)) break;
+        body.push(candidate);
+      }
+      fields.set(key, blockScalar(`${block[1] ?? ""}${block[2] ?? ""}`, body));
+      index = next - 1;
+      continue;
+    }
+    fields.set(key, unquote(raw));
+  }
+  return { fields, content: match[2].trim() };
+}
+function parseSkill(name, path, text4) {
+  let split;
+  try {
+    split = splitSkill(text4);
+  } catch (error2) {
+    throw skillError(name, error2 instanceof Error ? error2.message : String(error2));
+  }
+  if (split.fields.get("name") !== name) throw skillError(name, `must be named "${name}" in its frontmatter`);
+  const description = split.fields.get("description");
+  if (description === void 0 || description.trim() === "") throw skillError(name, "has no description");
+  if (split.content === "") throw skillError(name, "has no content");
   return {
     id: Skill.ID.make(name),
     name: Skill.Name.make(name),
     description,
     path: Skill.Info.fields.path.make(path),
-    content
+    content: split.content
   };
 }
 function loadSkills(directory = SKILLS_DIR) {
