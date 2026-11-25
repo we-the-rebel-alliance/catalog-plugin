@@ -13,7 +13,7 @@
  */
 import assert from "node:assert/strict"
 import { generateKeyPairSync, randomUUID } from "node:crypto"
-import { readdirSync } from "node:fs"
+import { existsSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { after, before, test } from "node:test"
 import { fileURLToPath } from "node:url"
@@ -130,6 +130,10 @@ test("broker.read reads a plugin's source for a consumer, and refuses a request 
 })
 
 test("every skills/*/SKILL.md is registered on the real host", async () => {
+  // The host runs in an empty temporary project, so OpenCode's own discovery of `<project>/skills/` cannot supply the
+  // skill: only the plugin's ctx.skill.transform can. The negative check (registerSkills removed) fails at the next
+  // assertion with "the catalog skill is registered after load".
+  assert.equal(existsSync(join(harness.directory, "skills")), false, "the host project has no skills/ of its own")
   const registered = new Set((await harness.skills()).map((skill) => skill.id))
   const directories = readdirSync(join(here, "skills"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
