@@ -35,7 +35,14 @@ let listing: {
 }
 
 before(async () => {
-  harness = await startHost({ grant: { kid: KID, publicKey } })
+  harness = await startHost({
+    grant: { kid: KID, publicKey },
+    grants: ({ harbour, brass }) => [
+      { consumer: CONSUMER, source: "harbour.notes", account: "work", scope: { spaces: ["space-research", "space-operations"] }, manifestHash: harbour.hash },
+      { consumer: CONSUMER, source: "harbour.notes", account: "personal", manifestHash: harbour.hash },
+      { consumer: CONSUMER, action: "brass.note", account: "default", manifestHash: brass.hash },
+    ],
+  })
 })
 
 after(async () => {
@@ -240,7 +247,7 @@ test("rpc.catalog.changed fires when a plugin is added to the installed set", as
   const event = await received
   assert.equal(event.type, "rpc.catalog.changed")
   const data = event.data as { readonly capability: string; readonly account: string; readonly reason: string }
-  assert.equal(data.capability, "catalog.plugins")
+  assert.equal(data.capability, "catalog.list")
   assert.equal(data.account, "default")
   assert.equal(data.reason, "installed")
   await events.return?.(undefined)

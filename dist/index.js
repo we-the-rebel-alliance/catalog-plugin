@@ -1004,14 +1004,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text4, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text5, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text4;
+        return text5;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text4.length <= endStep)
-        return text4;
+      if (text5.length <= endStep)
+        return text5;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -1028,14 +1028,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text4, i, indent.length);
+        i = consumeMoreIndentedLines(text5, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text4[i += 1]; ) {
+      for (let ch; ch = text5[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text4[i + 1]) {
+          switch (text5[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -1052,12 +1052,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text4, i, indent.length);
+            i = consumeMoreIndentedLines(text5, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text4[i + 1];
+            const next = text5[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -1069,12 +1069,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text4[i += 1];
+                ch = text5[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text4;
+                return text5;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -1089,39 +1089,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text4;
+        return text5;
       if (onFold)
         onFold();
-      let res = text4.slice(0, folds[0]);
+      let res = text5.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text4.length;
+        const end2 = folds[i2 + 1] || text5.length;
         if (fold === 0)
           res = `
-${indent}${text4.slice(0, end2)}`;
+${indent}${text5.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text4[fold]}\\`;
+            res += `${text5[fold]}\\`;
           res += `
-${indent}${text4.slice(fold + 1, end2)}`;
+${indent}${text5.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text4, i, indent) {
+    function consumeMoreIndentedLines(text5, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text4[start];
+      let ch = text5[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text4[++i];
+          ch = text5[++i];
         } else {
           do {
-            ch = text4[++i];
+            ch = text5[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text4[start];
+          ch = text5[start];
         }
       }
       return end;
@@ -16860,8 +16860,8 @@ function credentialValue(value, quoted, key, query) {
   if (v.length < (loose ? 8 : 6)) return false;
   return /\d/.test(v) || /[^A-Za-z0-9]/.test(v) || /.[A-Z]/.test(v);
 }
-function secretKinds(text4) {
-  const value = String(text4 ?? "");
+function secretKinds(text5) {
+  const value = String(text5 ?? "");
   const kinds = /* @__PURE__ */ new Set();
   if (new RegExp(PRIVATE_KEY_BLOCK.source).test(value)) kinds.add("private key");
   for (const [kind, pattern, valid] of SHAPED) {
@@ -17009,15 +17009,15 @@ var ACCOUNT_STATES = ["ready", "needs_sign_in", "error"];
 var REASON_MAX = 160;
 function redactReason(reason) {
   if (typeof reason !== "string" || reason.length === 0) return "No reason was given.";
-  let text4 = reason.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().replace(/([?&][^=\s&]+)=[^&\s]*/g, "$1=\u2026").replace(/\b(Bearer|Basic)\s+\S+/gi, "$1 \u2026").replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g, "\u2026").replace(/\b(?:sk|pk|rk|ghp|gho|ghs|xox[abp])[-_][A-Za-z0-9_-]{12,}\b/g, "\u2026").replace(/\b[A-Za-z0-9_-]{40,}\b/g, "\u2026");
-  if (text4.length === 0) text4 = "No reason was given.";
-  if (text4.length > REASON_MAX) {
+  let text5 = reason.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().replace(/([?&][^=\s&]+)=[^&\s]*/g, "$1=\u2026").replace(/\b(Bearer|Basic)\s+\S+/gi, "$1 \u2026").replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g, "\u2026").replace(/\b(?:sk|pk|rk|ghp|gho|ghs|xox[abp])[-_][A-Za-z0-9_-]{12,}\b/g, "\u2026").replace(/\b[A-Za-z0-9_-]{40,}\b/g, "\u2026");
+  if (text5.length === 0) text5 = "No reason was given.";
+  if (text5.length > REASON_MAX) {
     let end = REASON_MAX - 1;
-    const code = text4.charCodeAt(end - 1);
+    const code = text5.charCodeAt(end - 1);
     if (end > 0 && code >= 55296 && code <= 56319) end--;
-    text4 = `${text4.slice(0, end)}\u2026`;
+    text5 = `${text5.slice(0, end)}\u2026`;
   }
-  return text4;
+  return text5;
 }
 var NO_ACCOUNTS = [];
 var SIGN_IN_NEXT = "Sign in to the account that needs it, then read status again.";
@@ -17097,8 +17097,8 @@ function serialise(value) {
     return void 0;
   }
 }
-function holdsSecret(text4) {
-  return secretKinds(text4).length > 0;
+function holdsSecret(text5) {
+  return secretKinds(text5).length > 0;
 }
 var ACCOUNT = ALIAS_PATTERN;
 var ONE_LINE_RE = /^[^\r\n]+$/;
@@ -17175,11 +17175,11 @@ function isPlainObject2(value) {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
-function surrogateProblem(text4) {
-  for (let index = 0; index < text4.length; index++) {
-    const unit = text4.charCodeAt(index);
+function surrogateProblem(text5) {
+  for (let index = 0; index < text5.length; index++) {
+    const unit = text5.charCodeAt(index);
     if (unit >= 55296 && unit <= 56319) {
-      const next = text4.charCodeAt(index + 1);
+      const next = text5.charCodeAt(index + 1);
       if (!(next >= 56320 && next <= 57343)) return "holds a lone surrogate";
       index++;
     } else if (unit >= 56320 && unit <= 57343) {
@@ -17198,18 +17198,18 @@ function textProblem(value, what, max = 200) {
   return void 0;
 }
 function accountProblem(value) {
-  const text4 = textProblem(value, "the account", 32);
-  if (text4 !== void 0) return text4;
+  const text5 = textProblem(value, "the account", 32);
+  if (text5 !== void 0) return text5;
   return ACCOUNT_ALIAS.test(value) ? void 0 : "the account is not an alias: lowercase letters, digits and underscores, starting with a letter";
 }
 function kidProblem(value) {
-  const text4 = textProblem(value, "the key id", 64);
-  if (text4 !== void 0) return text4;
+  const text5 = textProblem(value, "the key id", 64);
+  if (text5 !== void 0) return text5;
   return KID.test(value) ? void 0 : "the key id holds a character other than letters, digits, dot, underscore, colon or hyphen";
 }
 function jtiProblem(value) {
-  const text4 = textProblem(value, "the grant id", 128);
-  if (text4 !== void 0) return text4;
+  const text5 = textProblem(value, "the grant id", 128);
+  if (text5 !== void 0) return text5;
   return JTI.test(value) ? void 0 : "the grant id holds a character other than letters, digits, dot, underscore, colon or hyphen";
 }
 function hashProblem(value, what) {
@@ -17224,15 +17224,15 @@ var GrantInputError = class extends Error {
 var INDEX = /^(?:0|[1-9]\d*)$/;
 var MAX_SCOPE_TEXT = 200;
 var CONTROL2 = /[\u0000-\u001f\u007f-\u009f]/;
-function emit(sink, text4) {
-  sink.bytes += Buffer.byteLength(text4, "utf8");
+function emit(sink, text5) {
+  sink.bytes += Buffer.byteLength(text5, "utf8");
   if (sink.bytes > MAX_INPUT_BYTES) throw new GrantInputError(`the canonical JSON is over ${MAX_INPUT_BYTES} bytes`);
-  sink.parts.push(text4);
+  sink.parts.push(text5);
 }
-function emitString(sink, text4) {
-  const surrogate = surrogateProblem(text4);
+function emitString(sink, text5) {
+  const surrogate = surrogateProblem(text5);
   if (surrogate !== void 0) throw new GrantInputError(`a string ${surrogate}`);
-  emit(sink, JSON.stringify(text4));
+  emit(sink, JSON.stringify(text5));
 }
 function dataProperty(value, key, what) {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -17351,7 +17351,7 @@ var StrictJsonError = class extends Error {
   }
 };
 var NUMBER = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/;
-function strictJson(text4, what) {
+function strictJson(text5, what) {
   let index = 0;
   const fail = (detail2) => {
     throw new StrictJsonError(`${what} ${detail2}`);
@@ -17360,22 +17360,22 @@ function strictJson(text4, what) {
     throw new StrictJsonError(`${what} holds a duplicate key`);
   };
   const skip = () => {
-    while (index < text4.length) {
-      const character = text4[index];
+    while (index < text5.length) {
+      const character = text5[index];
       if (character === " " || character === "	" || character === "\n" || character === "\r") index++;
       else break;
     }
   };
   const parseString = () => {
-    if (text4[index] !== '"') fail("is not JSON");
+    if (text5[index] !== '"') fail("is not JSON");
     const start = index;
     index++;
-    while (index < text4.length) {
-      const code = text4.charCodeAt(index);
+    while (index < text5.length) {
+      const code = text5.charCodeAt(index);
       if (code === 34) {
         index++;
         try {
-          return JSON.parse(text4.slice(start, index));
+          return JSON.parse(text5.slice(start, index));
         } catch {
           return fail("is not JSON");
         }
@@ -17390,13 +17390,13 @@ function strictJson(text4, what) {
     return fail("is not JSON");
   };
   const parseNumber = () => {
-    const match = NUMBER.exec(text4.slice(index));
+    const match = NUMBER.exec(text5.slice(index));
     if (match === null) return fail("is not JSON");
     index += match[0].length;
     return Number(match[0]);
   };
   const literal2 = (word, value) => {
-    if (!text4.startsWith(word, index)) fail("is not JSON");
+    if (!text5.startsWith(word, index)) fail("is not JSON");
     index += word.length;
     return value;
   };
@@ -17405,18 +17405,18 @@ function strictJson(text4, what) {
     index++;
     const out = [];
     skip();
-    if (text4[index] === "]") {
+    if (text5[index] === "]") {
       index++;
       return out;
     }
     while (true) {
       out.push(parseValue(depth + 1));
       skip();
-      if (text4[index] === ",") {
+      if (text5[index] === ",") {
         index++;
         continue;
       }
-      if (text4[index] === "]") {
+      if (text5[index] === "]") {
         index++;
         return out;
       }
@@ -17429,7 +17429,7 @@ function strictJson(text4, what) {
     const out = /* @__PURE__ */ Object.create(null);
     const keys = /* @__PURE__ */ new Set();
     skip();
-    if (text4[index] === "}") {
+    if (text5[index] === "}") {
       index++;
       return out;
     }
@@ -17439,15 +17439,15 @@ function strictJson(text4, what) {
       if (keys.has(key)) duplicate();
       keys.add(key);
       skip();
-      if (text4[index] !== ":") fail("is not JSON");
+      if (text5[index] !== ":") fail("is not JSON");
       index++;
       out[key] = parseValue(depth + 1);
       skip();
-      if (text4[index] === ",") {
+      if (text5[index] === ",") {
         index++;
         continue;
       }
-      if (text4[index] === "}") {
+      if (text5[index] === "}") {
         index++;
         return out;
       }
@@ -17456,7 +17456,7 @@ function strictJson(text4, what) {
   };
   const parseValue = (depth) => {
     skip();
-    const character = text4[index];
+    const character = text5[index];
     if (character === "{") return parseObject(depth + 1);
     if (character === "[") return parseArray(depth + 1);
     if (character === '"') return parseString();
@@ -17470,7 +17470,7 @@ function strictJson(text4, what) {
     skip();
     const value = parseValue(1);
     skip();
-    if (index !== text4.length) fail("is not JSON");
+    if (index !== text5.length) fail("is not JSON");
     return { ok: true, value };
   } catch (error2) {
     if (error2 instanceof StrictJsonError) return { ok: false, reason: error2.message };
@@ -19324,15 +19324,15 @@ function planStore(options = {}) {
     record(answer, account, method) {
       prune();
       let stored;
-      let text4;
+      let text5;
       try {
         stored = structuredClone(answer);
-        text4 = JSON.stringify(stored);
+        text5 = JSON.stringify(stored);
       } catch {
         return { ok: false, code: "PLAN_INVALID", problems: ["the plan holds a value a copy cannot carry; a plan answer is plain JSON"] };
       }
-      if (text4 === void 0) return { ok: false, code: "PLAN_INVALID", problems: ["the plan is not JSON; a plan answer is a JSON object"] };
-      const bytes3 = Buffer.byteLength(text4);
+      if (text5 === void 0) return { ok: false, code: "PLAN_INVALID", problems: ["the plan is not JSON; a plan answer is a JSON object"] };
+      const bytes3 = Buffer.byteLength(text5);
       if (bytes3 > PLAN_MAX_BYTES) {
         return { ok: false, code: "PLAN_INVALID", problems: [`the plan is ${bytes3} bytes of JSON, over the ${PLAN_MAX_BYTES}-byte limit`] };
       }
@@ -19847,11 +19847,11 @@ function createBus(name, registration) {
       if (!BUS_EVENTS.includes(event)) {
         return { ok: false, reason: "invalid", problems: ["event: must be one of changed, status, account"] };
       }
-      const text4 = serialise(data);
-      if (text4 !== void 0 && holdsSecret(text4)) return { ok: false, reason: "secret" };
+      const text5 = serialise(data);
+      if (text5 !== void 0 && holdsSecret(text5)) return { ok: false, reason: "secret" };
       const checked2 = checkBusData(name, event, data);
       if (!checked2.ok) return { ok: false, reason: "invalid", problems: checked2.problems };
-      if (text4 === void 0) return { ok: false, reason: "invalid", problems: ["data: must be JSON"] };
+      if (text5 === void 0) return { ok: false, reason: "invalid", problems: ["data: must be JSON"] };
       try {
         await registration.events.emit(event, checked2.value);
       } catch {
@@ -19911,6 +19911,122 @@ function assertHost(context, manifest2) {
   throw new Error(
     `HOST_UNTESTED: ${manifest2.plugin.name} supports ${manifest2.plugin.host.opencode}, and OpenCode ${context.app.version} is outside it. Next step: install OpenCode 2.4.1, or set allowUntestedHost.`
   );
+}
+
+// src/grants.ts
+var HASH3 = /^sha256:[0-9a-f]{64}$/;
+var KEYS = /* @__PURE__ */ new Set(["consumer", "source", "action", "account", "scope", "manifestHash", "disabled"]);
+var plain5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+function optionError(problem) {
+  return new Error(`OPTIONS_INVALID: options.grants ${problem}. Next step: fix the plugin's grants option.`);
+}
+function text3(value, where) {
+  if (typeof value !== "string" || value.trim() === "") throw optionError(`${where} must be a non-empty string`);
+  return value;
+}
+function scopeOf(value, where) {
+  if (value === void 0) return void 0;
+  if (!plain5(value)) throw optionError(`${where} must be an object`);
+  const scope2 = {};
+  for (const [key, values] of Object.entries(value)) {
+    if (!Array.isArray(values) || values.length === 0 || values.some((entry) => typeof entry !== "string" || entry.trim() === "")) {
+      throw optionError(`${where}.${key} must be a non-empty list of non-empty strings`);
+    }
+    scope2[key] = [...values];
+  }
+  return Object.keys(scope2).length === 0 ? void 0 : scope2;
+}
+function grantsOf(options) {
+  const raw = options["grants"];
+  if (raw === void 0) return [];
+  if (!Array.isArray(raw)) throw optionError("must be a list");
+  return raw.map((entry, index) => {
+    const where = `[${index}]`;
+    if (!plain5(entry)) throw optionError(`${where} must be an object`);
+    for (const key of Object.keys(entry)) if (!KEYS.has(key)) throw optionError(`${where} carries ${key}`);
+    const consumer = text3(entry["consumer"], `${where}.consumer`);
+    const account = text3(entry["account"], `${where}.account`);
+    const manifestHash2 = text3(entry["manifestHash"], `${where}.manifestHash`);
+    if (!HASH3.test(manifestHash2)) throw optionError(`${where}.manifestHash must be sha256: followed by 64 lowercase hex characters`);
+    const source2 = entry["source"] === void 0 ? void 0 : text3(entry["source"], `${where}.source`);
+    const action2 = entry["action"] === void 0 ? void 0 : text3(entry["action"], `${where}.action`);
+    if (source2 === void 0 === (action2 === void 0)) throw optionError(`${where} must name exactly one of source and action`);
+    const scope2 = scopeOf(entry["scope"], `${where}.scope`);
+    const disabled = entry["disabled"];
+    if (disabled !== void 0 && typeof disabled !== "boolean") throw optionError(`${where}.disabled must be a boolean`);
+    return {
+      consumer,
+      ...source2 === void 0 ? {} : { source: source2 },
+      ...action2 === void 0 ? {} : { action: action2 },
+      account,
+      ...scope2 === void 0 ? {} : { scope: scope2 },
+      manifestHash: manifestHash2,
+      ...disabled === true ? { disabled: true } : {}
+    };
+  });
+}
+function scopeCovers(grant, scope2) {
+  if (grant.scope === void 0) return true;
+  for (const [key, values] of Object.entries(scope2 ?? {})) {
+    const granted = grant.scope[key];
+    if (granted === void 0 || values.some((value) => !granted.includes(value))) return false;
+  }
+  return true;
+}
+function readGrants(grants, request) {
+  const named = grants.filter((grant) => grant.consumer === request.consumer && grant.source === request.source);
+  if (named.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `no grant for ${request.consumer} on ${request.source}`, "Ask the person to grant this consumer the source, then read again."));
+  }
+  const current = named.filter((grant) => grant.manifestHash === request.manifestHash);
+  if (current.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `the grant for ${request.consumer} on ${request.source} was for another manifest`, "Ask the person to review the installed manifest and grant it again."));
+  }
+  const account = current.filter((grant) => grant.account === request.account);
+  if (account.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `the grant for ${request.consumer} on ${request.source} is for another account`, `Ask the person to grant ${request.account}, or read the granted account.`));
+  }
+  const enabled = account.filter((grant) => grant.disabled !== true);
+  if (enabled.length === 0) {
+    throw new RegisterError(refusal("SOURCE_DISABLED", `${request.source} is turned off for ${request.consumer}`, "Turn the grant on again to read it."));
+  }
+  if (!enabled.some((grant) => scopeCovers(grant, request.scope))) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `the read asks for more of ${request.source} than ${request.consumer} was granted`, "Read within the granted scope, or ask the person to widen it."));
+  }
+  return enabled;
+}
+function readGrant(grants, request) {
+  const enabled = readGrants(grants, request);
+  const whole = enabled.some((grant) => grant.scope === void 0);
+  let scope2;
+  if (!whole) {
+    const merged = {};
+    for (const grant of enabled) for (const [key, values] of Object.entries(grant.scope ?? {})) {
+      const held = merged[key] ??= /* @__PURE__ */ new Set();
+      for (const value of values) held.add(value);
+    }
+    scope2 = Object.fromEntries(Object.entries(merged).map(([key, values]) => [key, [...values]]));
+  }
+  return { consumer: request.consumer, source: request.source, account: request.account, ...scope2 === void 0 ? {} : { scope: scope2 }, manifestHash: request.manifestHash };
+}
+function actGrant(grants, request) {
+  const named = grants.filter((grant) => grant.consumer === request.consumer && grant.action === request.action);
+  if (named.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `no grant for ${request.consumer} on ${request.action}`, "Ask the person to grant this consumer the action, then preview it again."));
+  }
+  const current = named.filter((grant) => grant.manifestHash === request.manifestHash);
+  if (current.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `the grant for ${request.consumer} on ${request.action} was for another manifest`, "Ask the person to review the installed manifest and grant it again."));
+  }
+  const account = current.filter((grant) => grant.account === request.account);
+  if (account.length === 0) {
+    throw new RegisterError(refusal("PERMISSION_DENIED", `the grant for ${request.consumer} on ${request.action} is for another account`, `Ask the person to grant ${request.account}, or act on the granted account.`));
+  }
+  const enabled = account.filter((grant) => grant.disabled !== true);
+  if (enabled.length === 0) {
+    throw new RegisterError(refusal("SOURCE_DISABLED", `${request.action} is turned off for ${request.consumer}`, "Turn the grant on again to act on it."));
+  }
+  return { consumer: request.consumer, action: request.action, account: request.account, manifestHash: request.manifestHash };
 }
 
 // node_modules/@we-the-rebel-alliance/plugin-contract/dist/chunks/chunk-6WEY3U6L.js
@@ -20011,7 +20127,7 @@ var MAX_PICK_PATH_LENGTH = 200;
 var SEGMENT = "[A-Za-z0-9_$-]+(?:\\[\\])?";
 var PICK_PATH = new RegExp(`^${SEGMENT}(?:\\.${SEGMENT})*$`);
 var MISSING = /* @__PURE__ */ Symbol("missing");
-var plain5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var plain6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function segments(path) {
   return path.split(".").map((part) => {
     const maps = part.endsWith("[]");
@@ -20021,7 +20137,7 @@ function segments(path) {
 function project(value, path) {
   const [segment, ...rest] = path;
   if (segment === void 0) return value;
-  if (!plain5(value) || !Object.hasOwn(value, segment.name)) return MISSING;
+  if (!plain6(value) || !Object.hasOwn(value, segment.name)) return MISSING;
   const child = value[segment.name];
   if (!segment.maps) {
     const projected = project(child, rest);
@@ -20046,7 +20162,7 @@ function merge2(left, right) {
     }
     return merged;
   }
-  if (plain5(left) && plain5(right)) {
+  if (plain6(left) && plain6(right)) {
     const merged = { ...left };
     for (const [key, value] of Object.entries(right)) {
       const item2 = Object.hasOwn(merged, key) ? merge2(merged[key], value) : value;
@@ -20055,17 +20171,17 @@ function merge2(left, right) {
     }
     return merged;
   }
-  if (plain5(right) && Object.keys(right).length === 0) return left;
+  if (plain6(right) && Object.keys(right).length === 0) return left;
   return right;
 }
 function pick2(data, paths) {
-  if (!plain5(data)) return { ok: false };
+  if (!plain6(data)) return { ok: false };
   let picked = {};
   for (const path of paths) {
     const projected = project(data, segments(path));
     if (projected === MISSING) continue;
     const merged = merge2(picked, projected);
-    if (merged === MISSING || !plain5(merged)) continue;
+    if (merged === MISSING || !plain6(merged)) continue;
     picked = merged;
   }
   return { ok: true, data: picked };
@@ -20086,10 +20202,10 @@ function resolveRef2(ref, root) {
   if (!ref.startsWith("#/") || typeof root === "boolean") return void 0;
   let node2 = root;
   for (const part of ref.slice(2).split("/").map((piece) => piece.replaceAll("~1", "/").replaceAll("~0", "~"))) {
-    if (!plain5(node2) || !Object.hasOwn(node2, part)) return void 0;
+    if (!plain6(node2) || !Object.hasOwn(node2, part)) return void 0;
     node2 = node2[part];
   }
-  return plain5(node2) || typeof node2 === "boolean" ? node2 : void 0;
+  return plain6(node2) || typeof node2 === "boolean" ? node2 : void 0;
 }
 var types = (schema) => {
   const type = schema["type"];
@@ -20102,10 +20218,10 @@ function property(schema, name, root) {
     const kinds = types(branch);
     if (kinds && !kinds.includes("object")) return [];
     const properties = branch["properties"];
-    if (plain5(properties) && Object.hasOwn(properties, name)) return [properties[name]];
+    if (plain6(properties) && Object.hasOwn(properties, name)) return [properties[name]];
     const additional = branch["additionalProperties"];
     if (additional === false) return [];
-    if (plain5(additional)) return [additional];
+    if (plain6(additional)) return [additional];
     return [true];
   });
 }
@@ -20116,7 +20232,7 @@ function items(schema, root) {
     const kinds = types(branch);
     if (kinds && !kinds.includes("array")) return [];
     const item2 = branch["items"];
-    return [plain5(item2) || typeof item2 === "boolean" ? item2 : true];
+    return [plain6(item2) || typeof item2 === "boolean" ? item2 : true];
   });
 }
 function schemaReaches(schema, path, root) {
@@ -20188,7 +20304,7 @@ function failureFromError(error2) {
   const retry = typeof record3["retryAfterSec"] === "number" ? record3["retryAfterSec"] : typeof data["retryAfterSec"] === "number" ? data["retryAfterSec"] : void 0;
   return failure3(code ?? "UNAVAILABLE", what || "the read failed", next, retry);
 }
-var plain6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var plain7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var refused = (code, what, next) => ({ ok: false, failure: failure3(code, what, next) });
 var bytes = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
 function checkReadRequest(request) {
@@ -20243,7 +20359,7 @@ function prepare2(request) {
 function checkAnswer(source2, account, answer) {
   const size = bytes(answer);
   if (size > maxBytesOf(source2)) return failure3("TOO_LARGE", `${source2.id} answered ${size} bytes, over its ${maxBytesOf(source2)}`, "Read a smaller window or fewer items.");
-  if (!plain6(answer)) return failure3("SCHEMA_VIOLATION", `${source2.id} answered something that is not an object`, "Report it to the plugin's maintainers.");
+  if (!plain7(answer)) return failure3("SCHEMA_VIOLATION", `${source2.id} answered something that is not an object`, "Report it to the plugin's maintainers.");
   if (answer["trust"] !== "untrusted") return failure3("SCHEMA_VIOLATION", `${source2.id}'s answer is not marked trust: "untrusted"`, "Report it to the plugin's maintainers.");
   if (answer["account"] !== void 0 && answer["account"] !== account) {
     return failure3("ACCOUNT_MISMATCH", `${source2.id} answered for another account than the one granted`, "Sign the plugin in to the granted account, or ask the person to grant this one.");
@@ -20260,12 +20376,12 @@ async function statusAliases(host2, installed) {
   } catch (error2) {
     return { ok: false, failure: failureFromError(error2) };
   }
-  if (!plain6(answer) || !Array.isArray(answer["accounts"])) {
+  if (!plain7(answer) || !Array.isArray(answer["accounts"])) {
     return { ok: false, failure: failure3("UNAVAILABLE", `${installed.package}'s status does not list its accounts`, "The host must read the plugin's status before it can fence an account.") };
   }
   const aliases = [];
   for (const account of answer["accounts"]) {
-    if (!plain6(account) || typeof account["alias"] !== "string" || account["alias"] === "") {
+    if (!plain7(account) || typeof account["alias"] !== "string" || account["alias"] === "") {
       return { ok: false, failure: failure3("UNAVAILABLE", `${installed.package}'s status has an account without an alias`, "The host must read the plugin's status before it can fence an account.") };
     }
     aliases.push(account["alias"]);
@@ -20341,7 +20457,7 @@ function acceptAnswer(source2, account, answer, options = {}) {
 }
 
 // node_modules/@we-the-rebel-alliance/plugin-contract/dist/act.js
-var plain7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var plain8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var refused2 = (code, what, next) => ({ ok: false, failure: failure3(code, what, next) });
 var bytes2 = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
 var CONFIRM_LIMIT = 20;
@@ -20362,7 +20478,7 @@ function confirmProblems(answer) {
       problems.push(`reaches must be a list of at most ${CONFIRM_LIMIT}`);
     } else {
       for (const [index, party] of reaches.entries()) {
-        if (!plain7(party) || typeof party["id"] !== "string" || party["id"].length === 0 || party["id"].length > 320) {
+        if (!plain8(party) || typeof party["id"] !== "string" || party["id"].length === 0 || party["id"].length > 320) {
           problems.push(`reaches[${index}].id must be 1 to 320 characters`);
         } else if (party["label"] !== void 0 && (typeof party["label"] !== "string" || party["label"].length > 200)) {
           problems.push(`reaches[${index}].label must be at most 200 characters`);
@@ -20387,7 +20503,7 @@ function checkAnswer2(act2, account, answer) {
   }
   const limit = MAX_BYTES_DEFAULT;
   if (size > limit) return failure3("TOO_LARGE", `${act2.id} answered ${size} bytes, over its ${limit}`, "Ask the plugin to answer a smaller preview.");
-  if (!plain7(answer)) return failure3("SCHEMA_VIOLATION", `${act2.id} answered something that is not an object`, "Report it to the plugin's maintainers.");
+  if (!plain8(answer)) return failure3("SCHEMA_VIOLATION", `${act2.id} answered something that is not an object`, "Report it to the plugin's maintainers.");
   if (answer["trust"] !== "untrusted") return failure3("SCHEMA_VIOLATION", `${act2.id}'s answer is not marked trust: "untrusted"`, "Report it to the plugin's maintainers.");
   if (answer["account"] !== void 0 && answer["account"] !== account) {
     return failure3("ACCOUNT_MISMATCH", `${act2.id} answered for another account than the one granted`, "Sign the plugin in to the granted account, or ask the person to grant this one.");
@@ -20497,7 +20613,7 @@ async function act(host2, request) {
     if (problem2) return { ok: false, failure: problem2 };
     return { ok: true, phase: "commit", result: answerOf(called2.answer) };
   }
-  if (request.input !== void 0 && !plain7(request.input)) {
+  if (request.input !== void 0 && !plain8(request.input)) {
     return refused2("SCHEMA_VIOLATION", "an act's input must be an object", "Pass the input the act's schema describes.");
   }
   const inputProblems = schemaProblems(declared.input, request.input ?? {});
@@ -20525,10 +20641,10 @@ async function act(host2, request) {
 }
 
 // src/failure.ts
-var plain8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var plain9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function whatOf(failure4) {
-  const text4 = failure4.message.replace(new RegExp(`^${failure4.code}:\\s*`), "").replace(/\.\s*Next step:[\s\S]*$/, "");
-  return text4.length === 0 ? "the call failed" : text4;
+  const text5 = failure4.message.replace(new RegExp(`^${failure4.code}:\\s*`), "").replace(/\.\s*Next step:[\s\S]*$/, "");
+  return text5.length === 0 ? "the call failed" : text5;
 }
 function refuseFailure(failure4) {
   throw new SourceError({
@@ -20544,7 +20660,7 @@ function describeError(error2, fallbackNext) {
     return { code: code2, message: `${code2}: ${redactReason(error2.what)}. Next step: ${redactReason(error2.next)}` };
   }
   const record3 = typeof error2 === "object" && error2 !== null ? error2 : {};
-  const data = plain8(record3["data"]) ? record3["data"] : {};
+  const data = plain9(record3["data"]) ? record3["data"] : {};
   const message2 = typeof record3["message"] === "string" ? record3["message"] : String(error2);
   const raw = [record3["code"], data["code"], /^([A-Z][A-Z0-9_]*):/.exec(message2)?.[1]].find((code2) => typeof code2 === "string");
   const code = (raw === void 0 ? void 0 : errorCodeOf(raw)) ?? "UNAVAILABLE";
@@ -20595,10 +20711,10 @@ import { existsSync as existsSync2, readFileSync as readFileSync2, readdirSync, 
 import { homedir } from "node:os";
 import { isAbsolute, join as join2 } from "node:path";
 import { fileURLToPath } from "node:url";
-var plain9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var plain10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var REQUEST_KEYS = /* @__PURE__ */ new Set(["package", "version", "manifestHash", "consumer", "source", "account", "scope", "cursor", "since", "limit", "pick"]);
 function isBrokerRequest(request) {
-  if (!plain9(request)) return false;
+  if (!plain10(request)) return false;
   for (const key of Object.keys(request)) if (!REQUEST_KEYS.has(key)) return false;
   for (const key of ["package", "version", "consumer", "source"]) {
     const value = request[key];
@@ -20611,7 +20727,7 @@ function isBrokerRequest(request) {
   if (request["since"] !== void 0 && typeof request["since"] !== "string") return false;
   if (request["limit"] !== void 0 && !(typeof request["limit"] === "number" && Number.isInteger(request["limit"]) && request["limit"] > 0)) return false;
   const scope2 = request["scope"];
-  if (scope2 !== void 0 && !(plain9(scope2) && Object.values(scope2).every((values) => Array.isArray(values) && values.every((value) => typeof value === "string")))) return false;
+  if (scope2 !== void 0 && !(plain10(scope2) && Object.values(scope2).every((values) => Array.isArray(values) && values.every((value) => typeof value === "string")))) return false;
   const pick3 = request["pick"];
   if (pick3 !== void 0 && !(Array.isArray(pick3) && pick3.every((value) => typeof value === "string"))) return false;
   return true;
@@ -20865,11 +20981,11 @@ async function listInstalledPlugins(host2, options = {}) {
 }
 
 // src/requests.ts
-var HASH3 = /^sha256:[0-9a-f]{64}$/;
+var HASH4 = /^sha256:[0-9a-f]{64}$/;
 var PREVIEW_KEYS = /* @__PURE__ */ new Set(["package", "version", "manifestHash", "consumer", "action", "account", "input"]);
 var COMMIT_KEYS = /* @__PURE__ */ new Set(["package", "version", "manifestHash", "consumer", "action", "account", "planId", "grant"]);
-var plain10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-function text3(value, key, problems) {
+var plain11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+function text4(value, key, problems) {
   if (typeof value !== "string" || value.length === 0) {
     problems.push(`${key} must be a non-empty string`);
     return void 0;
@@ -20877,13 +20993,13 @@ function text3(value, key, problems) {
   return value;
 }
 function actBase(value, problems) {
-  const packageName2 = text3(value["package"], "package", problems);
-  const version3 = text3(value["version"], "version", problems);
-  const manifestHash2 = text3(value["manifestHash"], "manifestHash", problems);
-  if (manifestHash2 !== void 0 && !HASH3.test(manifestHash2)) problems.push("manifestHash must be sha256: followed by 64 lowercase hex characters");
-  const consumer = text3(value["consumer"], "consumer", problems);
-  const action2 = text3(value["action"], "action", problems);
-  const account = value["account"] === void 0 ? void 0 : text3(value["account"], "account", problems);
+  const packageName2 = text4(value["package"], "package", problems);
+  const version3 = text4(value["version"], "version", problems);
+  const manifestHash2 = text4(value["manifestHash"], "manifestHash", problems);
+  if (manifestHash2 !== void 0 && !HASH4.test(manifestHash2)) problems.push("manifestHash must be sha256: followed by 64 lowercase hex characters");
+  const consumer = text4(value["consumer"], "consumer", problems);
+  const action2 = text4(value["action"], "action", problems);
+  const account = value["account"] === void 0 ? void 0 : text4(value["account"], "account", problems);
   return {
     ...packageName2 === void 0 ? {} : { package: packageName2 },
     ...version3 === void 0 ? {} : { version: version3 },
@@ -20894,12 +21010,12 @@ function actBase(value, problems) {
   };
 }
 function parseActPreview(value) {
-  if (!plain10(value)) return { ok: false, problems: ["the request must be an object"] };
+  if (!plain11(value)) return { ok: false, problems: ["the request must be an object"] };
   const problems = [];
   for (const key of Object.keys(value)) if (!PREVIEW_KEYS.has(key)) problems.push(`${key} is not a key a preview request carries`);
   const base = actBase(value, problems);
   const input = value["input"];
-  if (input !== void 0 && !plain10(input)) problems.push("input must be an object");
+  if (input !== void 0 && !plain11(input)) problems.push("input must be an object");
   if (problems.length > 0) return { ok: false, problems };
   return {
     ok: true,
@@ -20907,33 +21023,33 @@ function parseActPreview(value) {
   };
 }
 function parseActCommit(value) {
-  if (!plain10(value)) return { ok: false, problems: ["the request must be an object"] };
+  if (!plain11(value)) return { ok: false, problems: ["the request must be an object"] };
   const problems = [];
   for (const key of Object.keys(value)) {
     if (key === "input") problems.push("a commit takes the planId and the grant, not an input");
     else if (!COMMIT_KEYS.has(key)) problems.push(`${key} is not a key a commit request carries`);
   }
   const base = actBase(value, problems);
-  const planId = text3(value["planId"], "planId", problems);
-  const grant = value["grant"] === void 0 ? void 0 : text3(value["grant"], "grant", problems);
+  const planId = text4(value["planId"], "planId", problems);
+  const grant = value["grant"] === void 0 ? void 0 : text4(value["grant"], "grant", problems);
   if (problems.length > 0) return { ok: false, problems };
   return { ok: true, value: { ...base, planId, ...grant === void 0 ? {} : { grant } } };
 }
 var STATES = /* @__PURE__ */ new Set(["ready", "needs_sign_in", "error"]);
 function checkStatus(value) {
   const problems = [];
-  if (!plain10(value)) problems.push("status is not an object");
+  if (!plain11(value)) problems.push("status is not an object");
   else {
     if (typeof value["name"] !== "string" || value["name"].length === 0) problems.push("status.name must be a non-empty string");
     if (typeof value["version"] !== "string" || value["version"].length === 0) problems.push("status.version must be a non-empty string");
     if (!STATES.has(String(value["state"]))) problems.push("status.state must be ready, needs_sign_in or error");
     const host2 = value["host"];
-    if (!plain10(host2) || typeof host2["version"] !== "string" || typeof host2["range"] !== "string" || !Array.isArray(host2["tested"])) problems.push("status.host must be { version, range, tested }");
+    if (!plain11(host2) || typeof host2["version"] !== "string" || typeof host2["range"] !== "string" || !Array.isArray(host2["tested"])) problems.push("status.host must be { version, range, tested }");
     const accounts = value["accounts"];
     if (!Array.isArray(accounts)) problems.push("status.accounts must be a list");
     else {
       for (const [index, entry] of accounts.entries()) {
-        if (!plain10(entry) || typeof entry["alias"] !== "string" || !STATES.has(String(entry["state"]))) {
+        if (!plain11(entry) || typeof entry["alias"] !== "string" || !STATES.has(String(entry["state"]))) {
           problems.push(`status.accounts[${index}] must be { alias, state }`);
           break;
         }
@@ -20972,7 +21088,7 @@ function brokerActCommitHandler(runtime) {
       const host2 = runtime.host(call);
       const target = await resolveTarget(host2, request);
       const account = await accountFor(host2, target, request.account);
-      const grant = { consumer: request.consumer, action: request.action, account, manifestHash: request.manifestHash };
+      const grant = actGrant(runtime.grants, { consumer: request.consumer, action: request.action, account, manifestHash: target.hash });
       const outcome = await act(host2, {
         installed: target,
         action: request.action,
@@ -21007,7 +21123,7 @@ function brokerActHandler(runtime) {
       const host2 = runtime.host(call);
       const target = await resolveTarget(host2, request);
       const account = await accountFor(host2, target, request.account);
-      const grant = { consumer: request.consumer, action: request.action, account, manifestHash: request.manifestHash };
+      const grant = actGrant(runtime.grants, { consumer: request.consumer, action: request.action, account, manifestHash: target.hash });
       const outcome = await act(host2, {
         installed: target,
         action: request.action,
@@ -21053,14 +21169,19 @@ function brokerReadHandler(runtime) {
       const host2 = runtime.host(call);
       const target = await resolveTarget(host2, request);
       const account = await accountFor(host2, target, request.account);
-      const scope2 = request.scope;
-      const grant = { consumer: request.consumer, source: request.source, account, ...scope2 === void 0 ? {} : { scope: scope2 }, manifestHash: request.manifestHash };
+      const grant = readGrant(runtime.grants, {
+        consumer: request.consumer,
+        source: request.source,
+        account,
+        manifestHash: target.hash,
+        ...request.scope === void 0 ? {} : { scope: request.scope }
+      });
       const outcome = await read(host2, {
         installed: target,
         source: request.source,
         grant,
         consumer: request.consumer,
-        ...scope2 === void 0 ? {} : { scope: scope2 },
+        ...request.scope === void 0 ? {} : { scope: request.scope },
         ...request.cursor === void 0 ? {} : { cursor: request.cursor },
         ...request.since === void 0 ? {} : { since: request.since },
         ...request.limit === void 0 ? {} : { limit: request.limit },
@@ -21226,8 +21347,8 @@ var SKILLS = fileURLToPath2(new URL("../skills/", import.meta.url));
 function invalid(file3, what) {
   return new Error(`SCHEMA_VIOLATION: ${file3} ${what}. Next step: fix the skill file, then reload the plugin.`);
 }
-function frontmatter(text4, file3) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text4);
+function frontmatter(text5, file3) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text5);
   if (match === null) throw invalid(file3, "has no frontmatter");
   let data;
   try {
@@ -21243,7 +21364,7 @@ function frontmatter(text4, file3) {
   return {
     name: fields.name,
     description: fields.description,
-    content: text4.slice(match[0].length).trim()
+    content: text5.slice(match[0].length).trim()
   };
 }
 function readSkills(directory = SKILLS) {
@@ -21257,13 +21378,13 @@ function readSkills(directory = SKILLS) {
   if (names.length === 0) throw invalid("skills/", "holds no <name>/SKILL.md");
   return names.map((name) => {
     const file3 = `skills/${name}/SKILL.md`;
-    let text4;
+    let text5;
     try {
-      text4 = readFileSync4(join3(directory, name, "SKILL.md"), "utf8");
+      text5 = readFileSync4(join3(directory, name, "SKILL.md"), "utf8");
     } catch {
       throw invalid(file3, "is missing");
     }
-    const parsed = frontmatter(text4, file3);
+    const parsed = frontmatter(text5, file3);
     if (parsed.name === void 0 || parsed.name === "") throw invalid(file3, "has no frontmatter name");
     if (parsed.name !== name) throw invalid(file3, `names "${parsed.name}", not its directory "${name}"`);
     if (parsed.description === void 0 || parsed.description.trim() === "") throw invalid(file3, "has no frontmatter description");
@@ -21303,7 +21424,7 @@ async function inventorySignature(context) {
 async function watchInstalledSet(options) {
   const controller = new AbortController();
   const emit2 = async () => {
-    await options.bus.emit("changed", { capability: "catalog.plugins", account: "default", reason: "installed" });
+    await options.bus.emit("changed", { capability: "catalog.list", account: "default", reason: "installed" });
   };
   let previous = await inventorySignature(options.context);
   const loop = async () => {
@@ -21338,12 +21459,14 @@ var src_default = Plugin.define({
   async setup(context) {
     assertHost(context, manifest);
     const skills = readSkills();
+    const grants = grantsOf(context.options ?? {});
     const runtime = {
       manifest,
       version: version2,
       hostVersion: context.app.version,
       clock: Date.now,
       timeZone: timeZone(),
+      grants,
       host: (call) => callHost(context, call.agent)
     };
     const registration = await register(context, manifest, handlersFor(runtime));

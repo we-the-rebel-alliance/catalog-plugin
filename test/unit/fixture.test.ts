@@ -28,6 +28,7 @@ const runtime: HandlerRuntime = {
   hostVersion: "2.4.1",
   clock: () => Date.parse("2026-11-25T09:00:00.000Z"),
   timeZone: "UTC",
+  grants: [],
   host: () => {
     throw new Error("no host in this test")
   },

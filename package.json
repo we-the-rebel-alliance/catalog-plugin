@@ -70,6 +70,55 @@
           "type": "boolean",
           "default": false,
           "description": "Start outside the tested OpenCode range."
+        },
+        "grants": {
+          "type": "array",
+          "description": "The consumer grants this person consented to: one consumer, one source or action, one account, one scope and the installed manifest hash.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "consumer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "account": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "manifestHash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "disabled": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "consumer",
+              "account",
+              "manifestHash"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
         }
       },
       "additionalProperties": false
@@ -105,12 +154,13 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test": "node --test \"test/unit/**/*.test.ts\" \"test/host/**/*.test.ts\"",
     "fixtures": "node scripts/record-fixture.mjs",
     "docs": "plugin-kit docs",
     "docs:check": "plugin-kit docs --check",
-    "check": "npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm run test && plugin-kit check && plugin-kit docs --check",
-    "bundle": "node scripts/build.mjs"
+    "check": "npm run typecheck && npm run bundle && git diff --exit-code dist/ && npm test && npm run test:pack && plugin-kit check && plugin-kit docs --check",
+    "bundle": "node scripts/build.mjs",
+    "test:pack": "node --test \"test/pack/**/*.test.ts\""
   },
   "devDependencies": {
     "@opencode/plugin": "2.4.1",

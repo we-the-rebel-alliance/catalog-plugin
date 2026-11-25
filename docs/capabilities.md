@@ -58,9 +58,12 @@ source's installed manifest. The catalog compares them with the installed copy a
 
 Before the target is called, the catalog reads the target's `status` for its account aliases and resolves `account`:
 one account may be omitted, several make it required (`ACCOUNT_REQUIRED`), and an alias the target does not have is
-`ACCOUNT_UNKNOWN`. The read then runs in a session whose rules are exactly the grant's: deny everything, allow the
-source's method and its declared operations for the granted account. The catalog never adds an operation and never
-substitutes an account.
+`ACCOUNT_UNKNOWN`. It then looks the **person's grant** up from `options.grants` by `consumer`: the grant must name the
+source, the resolved account and the installed manifest hash, and its scope must cover the request. An ungranted
+consumer, another consumer's grant, another account, another manifest or a scope outside the grant is `PERMISSION_DENIED`;
+a disabled grant is `SOURCE_DISABLED`. The request can never supply or widen a grant. The read then runs in a session
+whose rules are exactly the grant's: deny everything, allow the source's method and its declared operations for the
+granted account. The catalog never adds an operation and never substitutes an account.
 
 The answer is the contract's `BrokerAnswer`. A refused read keeps its contract code in `ok: false`, so a consumer's
 `sourceReader` transport passes it through without reading a second shape.
@@ -87,4 +90,14 @@ single use, and spends the plan. A commit without a grant is refused before any 
 grant signed for another plan are `GRANT_INVALID` from the target.
 
 The method is class `write` with `effect: ask`: it changes the target, and it always asks the person before forwarding.
-Under `access: read-only` it is off even with a valid grant.
+Under `access: read-only` it is off even with a valid grant. The call needs a session whose agent exists: the
+contract's register refuses a session that names no agent, before this handler runs. Any OpenCode client can answer the
+ask in that session; there is no catalog-level grant verifier, and the target's grant is the confirmation of the actual
+write.
+
+The catalog declares `changed` for the installed set: the watcher emits `{ capability: "catalog.list", account:
+"default", reason: "installed" }` when the listing changes. A completed `broker_act_commit` does not emit a catalog
+nudge. The bus names a capability as `<name>.<segment>` with lowercase letters, digits and hyphens, so this method's
+underscored id (`broker_act_commit`) cannot be named; `catalog.list` is the only declared, bus-legal capability, and the
+installed set it lists did not change. The target plugin's own `register` emits the `changed` for the source the commit
+changed, and that is the nudge an app follows. Pull through the target's read is the truth.

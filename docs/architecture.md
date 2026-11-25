@@ -7,6 +7,7 @@
 | Entry | `src/index.ts` | `Plugin.define({ id, setup })`, the host gate, the one `register` call and the installed-set watcher |
 | Manifest | `src/manifest.ts` | reads `package.json` `capabilities` and checks it with the contract's validator |
 | Requests | `src/requests.ts` | the two wire requests and the relayed status shape, checked strictly |
+| Grants | `src/grants.ts` | the person's consumer grants from `options.grants`, and the lookup a broker call runs before a fence |
 | Handlers | `src/handlers/` | one handler per method: the input, the answer schema, the description and the work |
 | Host | `src/host/` | the contract's `ReadHost` over OpenCode, the target resolution and the account resolution |
 | Skills | `src/skills.ts` | reads `skills/*/SKILL.md`, parses its YAML frontmatter, and registers each with `ctx.skill.transform` |
@@ -32,7 +33,8 @@ place that opens a session or calls another plugin's RPC.
 6. A call passes the register's one gate (`catalog.<method>` on the method's resources), is validated against the
    handler's schema, and runs the handler.
 7. A broker handler resolves the target package, version and manifest hash; reads the target's `status` for its account
-   aliases; and calls the contract's `read` or `act` module with a `ReadHost` bound to the calling session's agent.
+   aliases; looks the person's grant up in `src/grants.ts` by consumer (an ungranted consumer or a wider scope is
+   refused); and calls the contract's `read` or `act` module with a `ReadHost` bound to the calling session's agent.
 8. `read`/`act` opens a session whose rules are exactly the grant's, calls the target's `status` and its method over RPC,
    checks the answer, and closes the session in a `finally`.
 9. An act commit sends `{ sessionID, input: { planId }, grant, consumer }` to the target; the target's `register`

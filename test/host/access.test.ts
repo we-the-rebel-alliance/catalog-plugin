@@ -63,7 +63,11 @@ async function previewAndGrant(harness: Harness): Promise<{ readonly request: Re
 }
 
 test("read-only runs the reads and refuses the commit even with a valid grant", async () => {
-  const harness = await startHost({ grant: { kid: KID, publicKey }, catalogOptions: { access: "read-only" } })
+  const harness = await startHost({
+    grant: { kid: KID, publicKey },
+    catalogOptions: { access: "read-only" },
+    grants: ({ brass }) => [{ consumer: CONSUMER, action: "brass.note", account: "default", manifestHash: brass.hash }],
+  })
   open = harness
   try {
     const brass = await brassOf(harness)
@@ -80,7 +84,11 @@ test("read-only runs the reads and refuses the commit even with a valid grant", 
 })
 
 test("ask-changes runs the commit once the person's ask is answered", async () => {
-  const harness = await startHost({ grant: { kid: KID, publicKey }, catalogOptions: { access: "ask-changes" } })
+  const harness = await startHost({
+    grant: { kid: KID, publicKey },
+    catalogOptions: { access: "ask-changes" },
+    grants: ({ brass }) => [{ consumer: CONSUMER, action: "brass.note", account: "default", manifestHash: brass.hash }],
+  })
   open = harness
   try {
     const { request } = await previewAndGrant(harness)
@@ -89,6 +97,27 @@ test("ask-changes runs the commit once the person's ask is answered", async () =
     const body = answered.ok ? (answered.output as { readonly phase: string; readonly result: { readonly output: { readonly text: string } } }) : undefined
     assert.equal(body?.phase, "commit")
     assert.equal(body?.result.output.text, "Access level")
+  } finally {
+    await harness.close()
+    open = undefined
+  }
+})
+
+test("a session with no agent is refused before the commit, so the app needs a session whose agent exists", async () => {
+  const harness = await startHost({
+    grant: { kid: KID, publicKey },
+    catalogOptions: { access: "ask-changes" },
+    grants: ({ brass }) => [{ consumer: CONSUMER, action: "brass.note", account: "default", manifestHash: brass.hash }],
+  })
+  open = harness
+  try {
+    const { request } = await previewAndGrant(harness)
+    const sessionID = await harness.session({})
+    const commit = await harness.call("broker_act_commit", { request }, { sessionID, answerAsk: true })
+    assert.equal(commit.ok, false)
+    assert.ok(!commit.ok)
+    assert.equal(commit.code, "PERMISSION_DENIED")
+    assert.match(commit.message, /names no agent/i)
   } finally {
     await harness.close()
     open = undefined

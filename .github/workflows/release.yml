@@ -35,6 +35,9 @@ jobs:
       - name: Fetch the contract over HTTPS
         run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
       - run: npm ci --ignore-scripts
+      - name: Install the tested OpenCode CLI
+        # `npm run check` includes the pack test, which installs through `opencode plugin add` and starts a server.
+        run: npm install --no-save --package-lock=false @opencode/cli@2.4.1
       - run: npm run check
       - name: The tag names this package's version
         env:

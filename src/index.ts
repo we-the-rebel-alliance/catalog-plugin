@@ -8,6 +8,7 @@
  */
 import { Plugin } from "@opencode/plugin"
 import { assertHost, register } from "@we-the-rebel-alliance/plugin-contract/register"
+import { grantsOf } from "./grants.ts"
 import { handlersFor, type HandlerRuntime } from "./handlers/index.ts"
 import { callHost } from "./host/broker.ts"
 import { manifest, version } from "./manifest.ts"
@@ -28,8 +29,9 @@ export default Plugin.define({
   id: manifest.plugin.name,
   async setup(context) {
     assertHost(context, manifest)
-    // Check every skill before anything registers, so a malformed file fails setup with one clear error.
+    // Check every skill and grant before anything registers, so a malformed one fails setup with one clear error.
     const skills = readSkills()
+    const grants = grantsOf(context.options ?? {})
 
     const runtime: HandlerRuntime = {
       manifest,
@@ -37,6 +39,7 @@ export default Plugin.define({
       hostVersion: context.app.version,
       clock: Date.now,
       timeZone: timeZone(),
+      grants,
       host: (call) => callHost(context, call.agent),
     }
 

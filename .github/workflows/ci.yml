@@ -43,5 +43,9 @@ jobs:
       - name: The committed bundle is current
         run: git diff --exit-code dist/
       - run: npm test
+      - name: Install the tested OpenCode CLI
+        # The pack test installs the tarball through the real `opencode plugin add` and starts `opencode serve`.
+        run: npm install --no-save --package-lock=false @opencode/cli@2.4.1
+      - run: npm run test:pack
       - run: npx plugin-kit check
       - run: npx plugin-kit docs --check

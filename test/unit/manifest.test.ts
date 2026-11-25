@@ -12,6 +12,7 @@ const runtime: HandlerRuntime = {
   hostVersion: "2.4.1",
   clock: () => 0,
   timeZone: "UTC",
+  grants: [],
   host: () => {
     throw new Error("no host in this test")
   },

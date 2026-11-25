@@ -2,7 +2,7 @@
  * The installed-set watcher behind `rpc.catalog.changed` (contract §10 and §14).
  *
  * OpenCode publishes `plugin.updated` whenever its plugin inventory changes. The catalog records the inventory's
- * signature, and on a change emits one `changed` nudge: `{ capability: "catalog.plugins", account: "default", reason:
+ * signature, and on a change emits its `changed` nudge: `{ capability: "catalog.list", account: "default", reason:
  * "installed" }`. The nudge carries no content; an app re-reads `catalog.list` through the RPC door.
  *
  * The signature covers every plugin the host lists — package targets and versions, local paths, and a failed plugin's
@@ -37,7 +37,7 @@ async function inventorySignature(context: Pick<WatchContext, "plugin">): Promis
 export async function watchInstalledSet(options: { readonly context: WatchContext; readonly bus: Bus }): Promise<() => void> {
   const controller = new AbortController()
   const emit = async (): Promise<void> => {
-    await options.bus.emit("changed", { capability: "catalog.plugins", account: "default", reason: "installed" })
+    await options.bus.emit("changed", { capability: "catalog.list", account: "default", reason: "installed" })
   }
   let previous = await inventorySignature(options.context)
   const loop = async (): Promise<void> => {

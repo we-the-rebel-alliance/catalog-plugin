@@ -7,7 +7,9 @@ instead of every plugin's manifest.
 
 The catalog signs in to nothing and talks to no provider. Every read and every write runs through the target plugin's
 own methods, in a session fenced by the person's grant, and the target plugin's `access` setting stays final. The
-catalog never verifies a grant, never widens one, and keeps no grant, session or plan beyond one call.
+catalog never verifies a grant and keeps no grant, session or plan beyond one call; its fence is exactly the person's
+grant. One known contract issue still lets a target method-level `deny` be overridden by a fenced read
+(plugin-contract#76).
 
 ## Install
 
@@ -15,7 +17,9 @@ catalog never verifies a grant, never widens one, and keeps no grant, session or
 opencode plugin add github:we-the-rebel-alliance/catalog-plugin#v0.0.0
 ```
 
-The first release on plugin-contract v0 is `v0.0.0`; pin it, because a Git install does not update by itself.
+`v0.0.0` is the first release on plugin-contract v0, cut from `master` by the release workflow. Pin it, because a Git
+install does not update by itself. Until the tag is published, pin the commit you reviewed instead; the release
+workflow packs the tag's committed `dist/index.js`.
 
 ## Use it
 
@@ -87,8 +91,21 @@ alias, resolved against that plugin's own `status`; the catalog never invents on
 |---|---|---|
 | `access` | `all` | How much the catalog's methods may do; see Access below. |
 | `allowUntestedHost` | `false` | Start on an OpenCode release outside `>=2.4.1 <2.5.0`. Leave it `false`. |
+| `grants` | `[]` | The consumer grants this person consented to; see Grants below. |
 
 Set them under the plugin's entry in `opencode.json`; see [Configuration](docs/configuration.md).
+
+## Grants
+
+A **grant** is the person's consent, kept in the plugin's configuration: one `consumer`, one `source` or `action`, one `account`, the confirmed `scope`, the installed `manifestHash` and an optional `disabled` switch. A broker request only names its consumer; the catalog looks that consumer's grant up before it opens a fence, and a request can never supply or widen one. An ungranted consumer, another consumer's grant, another account, another manifest or a scope outside the grant is `PERMISSION_DENIED`; a disabled grant is `SOURCE_DISABLED`. A changed target manifest changes its hash, so the person grants it again.
+
+```json
+{
+  "grants": [
+    { "consumer": "notes", "source": "harbour.notes", "account": "work", "scope": { "spaces": ["space-research"] }, "manifestHash": "sha256:…" }
+  ]
+}
+```
 
 ## Access
 
@@ -102,7 +119,7 @@ Set them under the plugin's entry in `opencode.json`; see [Configuration](docs/c
 
 The commit always asks, because the catalog cannot know how risky the target's action is. The target plugin's own
 `access` setting is final on top of this one: a target set to `read-only` refuses its own writes even when the catalog
-would forward one.
+would forward one. A target method-level `deny` on a read is the one known exception until plugin-contract#76 is fixed.
 
 ## Capabilities
 

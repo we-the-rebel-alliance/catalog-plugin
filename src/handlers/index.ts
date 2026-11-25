@@ -7,6 +7,7 @@
  */
 import type { Manifest } from "@we-the-rebel-alliance/plugin-contract/manifest"
 import type { HandlerTable, MethodCall } from "@we-the-rebel-alliance/plugin-contract/register"
+import type { GrantSpec } from "../grants.ts"
 import type { CallHost } from "../host/broker.ts"
 import { brokerActCommitHandler } from "./broker-act-commit.ts"
 import { brokerActHandler } from "./broker-act.ts"
@@ -26,6 +27,8 @@ export interface HandlerRuntime {
   readonly clock: () => number
   /** The host's time zone, in which a relative `since` is resolved. */
   readonly timeZone: string
+  /** The person's consumer grants, from `options.grants`; a broker call looks its consumer's grant up here. */
+  readonly grants: readonly GrantSpec[]
   /** The host a brokered call runs through, bound to the calling session's agent. */
   readonly host: (call: MethodCall) => CallHost
 }

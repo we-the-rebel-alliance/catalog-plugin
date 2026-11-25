@@ -1,15 +1,17 @@
 /**
  * `broker_act`: the preview of a named plugin's action, for a consumer.
  *
- * The preview runs through the contract's `act` module: the action is declared by the target, the grant is this
- * consumer's and names the target action, account and manifest hash, and the call runs in a session fenced to the
- * preview method and its operations. The target's preview writes nothing. Its answer carries the plan id the person's
- * confirmation will bind: the catalog returns it untouched, because the target's `register` minted it and holds the plan.
+ * The preview runs through the contract's `act` module: the action is declared by the target, the person's grant is
+ * looked up by consumer in `options.grants` and names the target action, account and installed manifest hash, and the
+ * call runs in a session fenced to the preview method and its operations. The request can never supply or widen the
+ * grant. The target's preview writes nothing. Its answer carries the plan id the person's confirmation will bind: the
+ * catalog returns it untouched, because the target's `register` minted it and holds the plan.
  */
 import { act } from "@we-the-rebel-alliance/plugin-contract/act"
 import { SourceError } from "@we-the-rebel-alliance/plugin-contract/events"
 import type { MethodHandler } from "@we-the-rebel-alliance/plugin-contract/register"
 import { refuseFailure } from "../failure.ts"
+import { actGrant } from "../grants.ts"
 import { accountFor, resolveTarget } from "../host/target.ts"
 import { parseActPreview } from "../requests.ts"
 import { OBJECT, REQUEST, refuseInput } from "./shared.ts"
@@ -28,8 +30,8 @@ export function brokerActHandler(runtime: HandlerRuntime): MethodHandler {
       const host = runtime.host(call)
       const target = await resolveTarget(host, request)
       const account = await accountFor(host, target, request.account)
-      // The grant comes from the request's own references: one consumer, one target action, one account, one manifest.
-      const grant = { consumer: request.consumer, action: request.action, account, manifestHash: request.manifestHash }
+      // The person's grant is looked up by consumer; the request can never supply one.
+      const grant = actGrant(runtime.grants, { consumer: request.consumer, action: request.action, account, manifestHash: target.hash })
       const outcome = await act(host, {
         installed: target,
         action: request.action,

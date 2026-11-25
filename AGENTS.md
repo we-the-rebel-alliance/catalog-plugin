@@ -28,7 +28,8 @@ verifies a grant, never widens one, and keeps no grant, plan or session beyond o
 | Command | Does |
 |---|---|
 | `npm ci --ignore-scripts` | installs dev tooling only; there are no runtime dependencies |
-| `npm run check` | typecheck, bundle, the committed bundle's freshness, tests, `plugin-kit check` and `plugin-kit docs --check` |
+| `npm run test:pack` | installs the packed tarball with `opencode plugin add` and starts it; the OpenCode 2.4.1 CLI must be on `PATH` |
+| `npm run check` | typecheck, bundle, the committed bundle's freshness, unit and host tests, the pack test, `plugin-kit check` and `plugin-kit docs --check` |
 | `npm run bundle` | builds `dist/index.js` with esbuild; commit the result with the source it bundles |
 | `npx plugin-kit check` | the conformance gate: T0, T1, docs, forbidden patterns, no bundled kit |
 | `npx plugin-kit docs` | regenerates the generated doc sections from the manifest |
@@ -46,7 +47,8 @@ src/requests.ts           the broker request, the two act requests and the relay
 src/handlers/             one file per method: status, list, broker_read, broker_act, broker_act_commit
 src/host/broker.ts        the contract's ReadHost over OpenCode: sessions, status and the target's RPC
 src/host/target.ts        the installed target and the target account alias, checked before any call
-src/watch.ts              the installed-set signature and the one `rpc.catalog.changed` nudge
+src/watch.ts              the installed-set signature and its `rpc.catalog.changed` nudge
+src/grants.ts             the person's consumer grants from options, and the lookup a broker call runs before a fence
 src/skills.ts             reads skills/*/SKILL.md, parses the YAML frontmatter and registers each with ctx.skill.transform
 src/failure.ts            a contract failure reported in the contract's form, redacted
 test/unit/                the manifest, the requests, the failures and the fixture
@@ -100,8 +102,12 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
   plain description containing `: ` must be quoted or written as a block scalar: YAML is strict, and a parse error fails
   the whole setup. The host test proves every registered description is the YAML text, not `>` or `|`.
 - **One RPC registration.** `register` owns it. A second `ctx.rpc.register` under `catalog` would hide the methods.
-- **The fence is the contract's.** `read` and `act` build the session rules from the request's grant fields; the catalog
-  adds no operation and substitutes no account.
+- **Grants are the person's configuration.** `options.grants` is the one consent record: one consumer, one source or
+  action, one account, the confirmed scope and the installed manifest hash. A broker request only names its consumer;
+  the catalog looks that grant up and never accepts one from the request. An ungranted consumer, another consumer's
+  grant, another account or manifest, or a wider scope is `PERMISSION_DENIED`; a disabled grant is `SOURCE_DISABLED`.
+- **The fence is the contract's.** `read` and `act` build the session rules from the looked-up grant; the catalog adds no
+  operation and substitutes no account.
 - **The grant is the target's.** The catalog never calls `verifyGrant` and never wires a grant verifier. The target's
   `register` verifies the token in its own RPC envelope.
 
@@ -124,6 +130,9 @@ scripts/record-fixture.mjs rebuilds fixtures/conformance.json from the manifest
   valid grant, and the missing, replayed and other-plan refusals; and `rpc.catalog.changed` when a plugin is added.
 - `test/host/access.test.ts` proves the catalog's own ceiling on the same host: `read-only` refuses the commit even with
   a valid grant, and `ask-changes` runs it once the ask is answered.
+- `test/host/grants.test.ts` proves the consent boundary on the same host: an ungranted consumer, another consumer's
+  grant, an account or scope outside the grant, a disabled grant and an ungranted action are all refused before the
+  target's source or action runs.
 - `test/host/skills.test.ts` loads the bundle in the real host with an empty project and proves every `skills/*/SKILL.md`
   id, path, body and YAML description is registered; `test/unit/skills.test.ts` covers the loader's block scalars and
   refusals.

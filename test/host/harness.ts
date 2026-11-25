@@ -15,6 +15,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
+import { readInstalledManifest, type InstalledManifest } from "@we-the-rebel-alliance/plugin-contract/manifest"
 
 /** The packages the harness installs and configures. */
 export const PACKAGES = {
@@ -38,8 +39,8 @@ export interface Harness {
   readonly directory: string
   /** The temporary OpenCode cache the packages are installed in. */
   readonly cache: string
-  /** A fresh session whose agent holds the catalog's generated access rules. */
-  session(): Promise<string>
+  /** A fresh session; the default names the `build` agent, and `{}` names none. */
+  session(options?: { readonly agent?: string }): Promise<string>
   /** Call one catalog RPC method; `answerAsk` answers the confirmation ask an app would answer. */
   call(method: string, input: unknown, options?: { readonly sessionID?: string; readonly answerAsk?: boolean }): Promise<RpcResult>
   /** Add one SDK plugin to the running host, as an install would change the inventory. */
@@ -135,12 +136,33 @@ function withOptions(context: unknown, options: Readonly<Record<string, unknown>
   })
 }
 
+/** The installed targets a grant names, read after the harness lays them into the cache. */
+export interface InstalledTargets {
+  readonly harbour: InstalledManifest
+  readonly brass: InstalledManifest
+}
+
 /** Start the real host with the three installed packages and the catalog's built bundle. */
-export async function startHost(options: { readonly grant: GrantKey; readonly catalogOptions?: Readonly<Record<string, unknown>> }): Promise<Harness> {
+export async function startHost(options: {
+  readonly grant: GrantKey
+  readonly catalogOptions?: Readonly<Record<string, unknown>>
+  /** The consumer grants to configure, built after install because a grant names the installed manifest hash. */
+  readonly grants?: (installed: InstalledTargets) => readonly unknown[]
+}): Promise<Harness> {
   const cache = prepareCache()
   const directory = mkdtempSync(join(tmpdir(), "catalog-project-"))
 
   try {
+    const installed = (name: string): InstalledManifest => {
+      const parsed = readInstalledManifest(join(cache, "opencode", "npm", `${name}@latest`, "1", "node_modules", name))
+      if (!parsed.ok) throw new Error(`${name} does not install: ${parsed.problems.join("; ")}`)
+      return parsed.value
+    }
+    const catalogOptions = {
+      ...(options.catalogOptions ?? {}),
+      ...(options.grants === undefined ? {} : { grants: options.grants({ harbour: installed(PACKAGES.harbour), brass: installed(PACKAGES.brass) }) }),
+    }
+
     const config = {
       plugins: [
         { package: PACKAGES.harbour, options: { accounts: { work: { workspace: "research" }, personal: { workspace: "home" } } } },
@@ -160,7 +182,7 @@ export async function startHost(options: { readonly grant: GrantKey; readonly ca
       id: definition.id,
       async setup(context) {
         try {
-          const cleanup = await definition.setup(withOptions(context, options.catalogOptions ?? {}))
+          const cleanup = await definition.setup(withOptions(context, catalogOptions))
           active = true
           return cleanup
         } catch (error) {
@@ -185,13 +207,26 @@ export async function startHost(options: { readonly grant: GrantKey; readonly ca
 
     const activation = await host.sessions.create({ location: { directory }, agent: "build", permissions: [] })
     await host.sessions.prompt({ sessionID: activation.id, text: "activate the catalog", delivery: "queue" }).catch(() => undefined)
-    const ready = await waitFor(async () => (active ? true : undefined), 20_000)
-    if (ready === undefined) {
+    // The kit's activation wait is the one the conformance host uses; the harness still starts its own host because
+    // `createHost` cannot configure the installed target packages or answer a commit's permission ask.
+    const { waitForActivation } = (await import("@we-the-rebel-alliance/plugin-contract/kit")) as {
+      readonly waitForActivation: (options: { readonly isActive: () => boolean; readonly timeoutMs?: number }) => Promise<void>
+    }
+    try {
+      await waitForActivation({ isActive: () => active, timeoutMs: 20_000 })
+    } catch {
       await host.close().catch(() => undefined)
       throw new Error(`the catalog did not become active: ${failure ?? "no setup error was recorded"}`)
     }
 
-    const session = async (): Promise<string> => (await host.sessions.create({ location: { directory }, agent: "build", permissions: [] })).id
+    const session = async (sessionOptions: { readonly agent?: string } = { agent: "build" }): Promise<string> => {
+      const created = await host.sessions.create({
+        location: { directory },
+        permissions: [],
+        ...(sessionOptions.agent === undefined ? {} : { agent: sessionOptions.agent }),
+      })
+      return created.id
+    }
 
     const call = async (method: string, input: unknown, callOptions: { readonly sessionID?: string; readonly answerAsk?: boolean } = {}): Promise<RpcResult> => {
       const sessionID = callOptions.sessionID ?? (await session())
