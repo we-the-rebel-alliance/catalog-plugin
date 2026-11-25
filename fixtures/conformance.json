@@ -1,0 +1,48 @@
+{
+  "plugin": "@we-the-rebel-alliance/catalog-plugin",
+  "events": {
+    "emitted": [
+      "changed"
+    ],
+    "status": {
+      "name": "catalog",
+      "version": "0.0.0",
+      "host": {
+        "version": "2.4.1",
+        "range": ">=2.4.1 <2.5.0",
+        "tested": [
+          "2.4.1"
+        ]
+      },
+      "state": "ready",
+      "accounts": [],
+      "unguardedAgents": [],
+      "nextStep": null
+    }
+  },
+  "rpc": {
+    "inputs": {
+      "broker_act_commit": {
+        "request": {
+          "package": "@we-the-rebel-alliance/brass-plugin",
+          "version": "0.0.0",
+          "manifestHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "consumer": "conformance",
+          "action": "brass.note",
+          "planId": "the-plan-the-preview-answered",
+          "grant": "the-host-signed-grant"
+        }
+      }
+    },
+    "calls": [
+      {
+        "method": "broker_act_commit",
+        "ask": "denied",
+        "expect": {
+          "code": "PERMISSION_DENIED"
+        }
+      }
+    ]
+  },
+  "namespace": "One trusted door for apps: list the installed plugins with their status, read a plugin's source for a consumer, and preview then commit a plugin's action under the host-signed grant."
+}

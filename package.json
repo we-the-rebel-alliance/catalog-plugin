@@ -1,0 +1,123 @@
+{
+  "name": "@we-the-rebel-alliance/catalog-plugin",
+  "version": "0.0.0",
+  "description": "One trusted door for apps: lists the installed plugins and their status, brokers a consumer's read of a plugin's source, and brokers a plugin's action preview and commit under the host-signed grant.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/we-the-rebel-alliance/catalog-plugin.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    "./server": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "capabilities": {
+    "version": 1,
+    "plugin": {
+      "name": "catalog",
+      "title": "Catalog",
+      "summary": "One trusted door for apps: list the installed plugins with their status, read a plugin's source for a consumer, and preview then commit a plugin's action under the host-signed grant.",
+      "vendor": {
+        "id": "we-the-rebel-alliance",
+        "name": "We The Rebel Alliance",
+        "domain": "github.com"
+      },
+      "icons": [
+        {
+          "src": "assets/icon.svg",
+          "type": "image/svg+xml"
+        },
+        {
+          "src": "assets/icon-128.png",
+          "type": "image/png"
+        },
+        {
+          "src": "assets/icon-256.png",
+          "type": "image/png"
+        }
+      ],
+      "host": {
+        "opencode": ">=2.4.1 <2.5.0",
+        "tested": [
+          "2.4.1"
+        ]
+      }
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "access": {
+          "type": "string",
+          "enum": [
+            "all",
+            "ask-changes",
+            "read-only"
+          ],
+          "default": "all",
+          "description": "How much the plugin's methods may do."
+        },
+        "allowUntestedHost": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start outside the tested OpenCode range."
+        }
+      },
+      "additionalProperties": false
+    },
+    "methods": {
+      "status": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "list": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_read": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_act": {
+        "class": "read",
+        "accounts": "none"
+      },
+      "broker_act_commit": {
+        "class": "write",
+        "effect": "ask",
+        "accounts": "none"
+      }
+    },
+    "sources": [],
+    "actions": [],
+    "events": {
+      "changed": {}
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "fixtures": "node scripts/record-fixture.mjs",
+    "docs": "plugin-kit docs",
+    "docs:check": "plugin-kit docs --check",
+    "check": "npm run typecheck && npm run build && npm run test && plugin-kit check && plugin-kit docs --check"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "2.4.1",
+    "@opencode/sdk": "2.4.1",
+    "@types/node": "24.19.2",
+    "@we-the-rebel-alliance/plugin-contract": "github:we-the-rebel-alliance/plugin-contract#0833f61a5ddc7a4583b360145cc8e9cd8cf989f2",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}
