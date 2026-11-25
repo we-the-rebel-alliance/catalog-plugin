@@ -2,7 +2,9 @@
 
 ## 0.0.0 (2026-11-25)
 
-The first release: one trusted door for apps on plugin-contract v0.
+The first release: one trusted door for apps on plugin-contract v0. This is the first catalog plugin — the repository has
+no earlier release tag and there is no prior catalog plugin to carry over — so no capability is removed since an earlier
+version.
 
 - `catalog.list`: the installed plugins' validated manifests, their `sha256` hashes and each plugin's own status.
 - `broker_read`: a consumer's read of a named plugin's source, through the contract's `read` module and a session fenced
