@@ -36,8 +36,12 @@ jobs:
         run: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
       - run: npm ci --ignore-scripts
       - name: Install the tested OpenCode CLI
-        # `npm run check` includes the pack test, which installs through `opencode plugin add` and starts a server.
-        run: npm install --no-save --package-lock=false @opencode/cli@2.4.1
+        # `npm run check` includes the pack test, which needs `opencode`, but the project's node_modules must stay exactly
+        # as `npm ci` installed it from the lockfile.
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/opencode-cli" --no-save @opencode/cli@2.4.1
+          echo "$RUNNER_TEMP/opencode-cli/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm run check
       - name: The tag names this package's version
         env:
