@@ -3,7 +3,7 @@
 // (including packages inlined by a bundled dist, such as zod inside plugin-contract), and requires a NOTICE section for
 // each. The second test proves the section check reports a missing package.
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { test } from "node:test"
@@ -21,13 +21,32 @@ function keep(name: string | undefined): name is string {
   return name !== undefined && name !== PLUGIN && !name.startsWith("@opencode/")
 }
 
-function section(name: string): RegExp {
+function heading(name: string): RegExp {
   return new RegExp(`^## ${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\s|$)`, "m")
 }
 
 /** The packages a NOTICE does not name, in the order they were found. */
 export function missingNoticeSections(notice: string, packages: readonly string[]): string[] {
-  return packages.filter((name) => !section(name).test(notice))
+  return packages.filter((name) => !heading(name).test(notice))
+}
+
+/** One package's NOTICE section, from its heading to the next `## ` heading. */
+function noticeSection(notice: string, name: string): string {
+  const match = heading(name).exec(notice)
+  if (match === null) return ""
+  const start = match.index + match[0].length
+  const next = notice.indexOf("\n## ", start)
+  return next === -1 ? notice.slice(start) : notice.slice(start, next)
+}
+
+/** The package's own LICENSE file text, as npm installed it. */
+function licenseOf(name: string): string {
+  const directory = join(root, "node_modules", name)
+  for (const file of ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING", "COPYING.md"]) {
+    const path = join(directory, file)
+    if (existsSync(path)) return readFileSync(path, "utf8")
+  }
+  throw new Error(`${name} has no LICENSE file under ${directory}`)
 }
 
 /** Every package esbuild actually inlines into the server bundle. */
@@ -72,6 +91,9 @@ test("every bundled package has a NOTICE section", async () => {
   assert.ok(packages.includes("zod"), "zod is inlined")
   const notice = readFileSync(join(root, "NOTICE"), "utf8")
   assert.deepEqual(missingNoticeSections(notice, packages), [])
+  for (const name of packages) {
+    assert.ok(noticeSection(notice, name).includes(licenseOf(name)), `${name}'s licence text is not verbatim in NOTICE`)
+  }
 })
 
 test("a missing section is reported", () => {
